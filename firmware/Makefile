@@ -14,7 +14,7 @@ CFLAGS=-g -Os -Wall -mcall-prologues -std=c99 -pedantic -Wundef \
 	-DF_CPU=$(F_CPU)
 OBJ2HEX=avr-objcopy
 
-program : $(TARGET).hex
+program : $(TARGET).hex $(TARGET).eep
 	sudo $(UISP)  $(PROGRAMMER_ARGS) \
 	  -U flash:w:$(TARGET).hex
 
@@ -22,10 +22,20 @@ program : $(TARGET).hex
 	$(CC) $(CFLAGS) $< -o $@
 
 %.hex : main.obj
-	$(OBJ2HEX) -j .text -O ihex $< $@
+	$(OBJ2HEX) -j .text -j .data -O ihex $< $@
+
+%.eep : main.obj
+	$(OBJ2HEX) -j .eeprom -O ihex $< $@
 
 prod: CFLAGS += -DPRODUCTION=1
 prod: clean program
+
+uno: MCU=atmega328
+uno: AVRDUDE_TARGET=m328p
+uno: F_CPU=16000000UL
+uno: PROGRAMMER=arduino
+uno: PORT=/dev/tty.usbmodem411
+uno: clean program
 
 fuse:
 	sudo $(UISP)  $(PROGRAMMER_ARGS) \

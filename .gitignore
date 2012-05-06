@@ -1,10 +1,11 @@
 *.b#*
-*.s#*
+*.dri
+*.eep
 *.ger
 *.gpi
-*.dri
-*.xln
 *.pro
+*.s#*
+*.xln
 *.zip
-eagle.epf
 .DS_Store
+eagle.epf
