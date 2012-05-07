@@ -63,14 +63,17 @@ unsigned char USI_TWI_Get_State_Info(void) {
   return (USI_TWI_state.errorState);
 }
 
-unsigned char USI_TWI_Start_Random_Read(unsigned char *msg,
-                                        unsigned char msgSize) {
+#if 0
+static unsigned char USI_TWI_Start_Random_Read(unsigned char *msg,
+                                               unsigned char msgSize) {
   *(msg) &= ~(TRUE<<TWI_READ_BIT);
   USI_TWI_state.errorState = 0;
   USI_TWI_state.state.memReadMode = TRUE;
 
   return (USI_TWI_Start_Transceiver_With_Data(msg, msgSize));
 }
+#endif
+
 /*---------------------------------------------------------------
   USI Normal Read / Write Function
   Transmit and receive function. LSB of first byte in buffer 

@@ -27,7 +27,7 @@ CFLAGS=-g -Os -Wall -mcall-prologues -std=c99 -pedantic -Wundef \
   -DM_SECOND=0x$(M_SECOND)
 OBJ2HEX=avr-objcopy
 
-SOURCES=main.c pcf8523.c USI_TWI_Master.c
+SOURCES=main.c pcf8523.c USI_TWI_Master.c attinyx5.c
 
 program: $(TARGET).hex
 	$(UISP) $(PROGRAMMER_ARGS) \

@@ -30,6 +30,7 @@ uint8_t wake_minute;
 uint8_t second, minute, hour;  // in same memory order as registers
 
 // Side effect: clears value.
+uint8_t _was_button_pressed;
 uint8_t was_button_pressed() {
   uint8_t result = _was_button_pressed;
   _was_button_pressed = 0;
@@ -158,7 +159,18 @@ static void power_down() {
   // We've woken up. Turn back on any peripherals we need while running.
   init_power_reduction_register(0);
   init_rtc();
-  refresh_time(&hour, &minute, &second);
+
+  // If we woke up and the '8523's SF bit is clear, then it's a safe guess
+  // the button press (as opposed to the '8523's /INT1 going active).
+  _was_button_pressed = !clear_second_flag();
+  if (!_was_button_pressed) {
+    // /INT1 must have gone low. Wait for it to come back.
+    while (is_button_pressed())
+      ;
+  }
+
+  // Now wait for the rising edge to pass.
+  refresh_time(&hour);
 }
 
 static void handle_NIGHT() {
@@ -215,8 +227,8 @@ int main(void) {
 
     // We woke up!
     if (was_button_pressed()) {
-      //      set_wake_time();
-      //      continue;
+      set_wake_time();
+      continue;
     }
 
     int16_t minutes_until_wake = calculate_minutes_until_wake();
@@ -224,11 +236,6 @@ int main(void) {
                              minutes_until_wake > 0);
     uint8_t in_post_window = (minutes_until_wake > -WAKE_WINDOW_POST_MINUTES &&
                               minutes_until_wake <= 0);
-
-    //
-    in_pre_window = 0;
-    in_post_window = 1;
-    //
 
     if (!in_pre_window && !in_post_window && state != STATE_NIGHT) {
       state = start_NIGHT();

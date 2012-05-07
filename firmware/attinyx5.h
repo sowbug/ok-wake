@@ -38,50 +38,16 @@
 #define SDA _BV(PB0)
 #define SDA_DD _BV(DDB0)
 
-static int is_button_pressed() {
-  return !(PINB & BUTTON);
-}
+int is_button_pressed();
 
-void init_power_reduction_register(int for_power_down) {
-  // All peripherals off except USI.
-  PRR = _BV(PRADC) | _BV(PRTIM0) | _BV(PRTIM1);
-  if (for_power_down) {
-    PRR |= _BV(PRUSI);
-  }
-}
+void init_power_reduction_register(int for_power_down);
 
-void enable_pin_interrupts() {
-  PCMSK = _BV(PCINT1);  // PB1 any change.
-  GIMSK = BUTTON_INT;  // Enable INT0 interrupt.
-}
+void enable_pin_interrupts();
 
-void i2c_init() {
-  USI_TWI_Master_Initialize();
-}
+void i2c_init();
 
-void write_i2c_byte(uint8_t addr, uint8_t reg, uint8_t data) {
-  uint8_t i2c_buffer[3] = { addr, reg, data };
-  USI_TWI_Start_Read_Write(i2c_buffer, 2 + 1);
-}
+void write_i2c_byte(uint8_t addr, uint8_t reg, uint8_t data);
 
-uint8_t read_i2c_byte(uint8_t addr, uint8_t reg) {
-  uint8_t i2c_buffer[2] = { addr, reg };
-  USI_TWI_Start_Read_Write(i2c_buffer, 2);
-  i2c_buffer[0] |= 1;
-  i2c_buffer[1] = 0;
-  USI_TWI_Start_Read_Write(i2c_buffer, 2);
-  return i2c_buffer[1];
-}
-
-volatile uint8_t _was_button_pressed;
-ISR(PCINT0_vect) {
-  // If we got here and the '8523's SF bit is clear, then it's a safe guess
-  // that the reason /INT1 went active was because of the button press.
-  _was_button_pressed = !clear_second_flag();
-
-  // Now wait for the rising edge to pass.
-  while (is_button_pressed())
-    ;
-}
+uint8_t read_i2c_byte(uint8_t addr, uint8_t reg);
 
 #endif  // #if !defined(__ATTINYX5_H__)

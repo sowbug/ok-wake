@@ -27,7 +27,7 @@ void stop_32768_clkout();
 
 void set_second_interrupt(uint8_t enable);
 
-void refresh_time(uint8_t *hour, uint8_t *minute, uint8_t *second);
+void refresh_time(uint8_t *time);
 
 uint8_t bcd_to_decimal(uint8_t bcd);
 

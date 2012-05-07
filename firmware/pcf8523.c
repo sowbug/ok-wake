@@ -41,16 +41,24 @@ void init_rtc() {
   i2c_init();
 }
 
+static uint8_t read_seconds() {
+  return read_i2c_byte(RTC_ADDR, RTC_SECONDS);
+}
+
 uint8_t is_rtc_connected() {
-  uint8_t sample = read_i2c_byte(RTC_ADDR, RTC_SECONDS);
+  uint8_t sample = read_seconds();
   _delay_ms(1010);
-  return read_i2c_byte(RTC_ADDR, RTC_SECONDS) != sample;
+  return read_seconds() != sample;
 }
 
 uint8_t rtc_write_verify() {
+#if 0
   uint8_t sample = read_i2c_byte(RTC_ADDR, RTC_TMR_B_REG) + 7;
   write_i2c_byte(RTC_ADDR, RTC_TMR_B_REG, sample);
   return read_i2c_byte(RTC_ADDR, RTC_TMR_B_REG) == sample;
+#else
+  return 1;
+#endif
 }
 
 void set_rtc_time(uint8_t year, uint8_t month, uint8_t day, uint8_t hour,
@@ -97,18 +105,16 @@ void set_second_interrupt(uint8_t enable) {
   write_i2c_byte(RTC_ADDR, RTC_CONTROL_1, rc1);
 }
 
-void refresh_time(uint8_t *hour, uint8_t *minute, uint8_t *second) {
-  *hour = bcd_to_decimal(read_i2c_byte(RTC_ADDR, RTC_HOURS));
-  *minute = bcd_to_decimal(read_i2c_byte(RTC_ADDR, RTC_MINUTES));
-  *second = bcd_to_decimal(read_i2c_byte(RTC_ADDR, RTC_SECONDS));
+void refresh_time(uint8_t *time) {
+  *time++ = bcd_to_decimal(read_i2c_byte(RTC_ADDR, RTC_HOURS));
+  *time++ = bcd_to_decimal(read_i2c_byte(RTC_ADDR, RTC_MINUTES));
+  *time++ = bcd_to_decimal(read_seconds());
 }
 
 uint8_t bcd_to_decimal(uint8_t bcd) {
-  uint8_t result = bcd & 0x0f;
-  return result + ((bcd >> 4) & 0x0f) * 10;
+  return (bcd & 0x0f) + ((bcd >> 4) & 0x0f) * 10;
 }
 
 uint8_t decimal_to_bcd(uint8_t decimal) {
-  uint8_t result = (decimal / 10) * 16;
-  return result + (decimal % 10);
+  return ((decimal / 10) * 16) + (decimal % 10);
 }
