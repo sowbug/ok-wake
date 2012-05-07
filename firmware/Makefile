@@ -1,12 +1,12 @@
 TARGET=ok-wake
 MCU=attiny25
 AVRDUDE_TARGET=t25
-F_CPU=1200000UL
+F_CPU=1000000UL
 
 UISP=avrdude
 PROGRAMMER=avrisp2
 PORT=usb
-PROGRAMMER_ARGS=-c $(PROGRAMMER) -P $(PORT) -p $(AVRDUDE_TARGET) -v
+PROGRAMMER_ARGS=-c $(PROGRAMMER) -P $(PORT) -p $(AVRDUDE_TARGET)
 
 M_YEAR=$(shell date +%y)
 M_MONTH=$(shell date +%m)
@@ -27,7 +27,7 @@ CFLAGS=-g -Os -Wall -mcall-prologues -std=c99 -pedantic -Wundef \
   -DM_SECOND=0x$(M_SECOND)
 OBJ2HEX=avr-objcopy
 
-SOURCES=main.c devices/USI_TWI_Master.c
+SOURCES=main.c pcf8523.c USI_TWI_Master.c
 
 program: $(TARGET).hex
 	$(UISP) $(PROGRAMMER_ARGS) \
@@ -56,13 +56,15 @@ uno: AVRDUDE_TARGET=m328p
 uno: F_CPU=16000000UL
 uno: PROGRAMMER=arduino
 uno: PORT=/dev/tty.usbmodem411
+uno: CFLAGS += -DNO_USI_TWI=1
 uno: clean program eeprom
 
-fuse-t13:
+# http://www.frank-zhao.com/fusecalc/fusecalc.php?chip=attiny25&LOW=62&HIGH=D6
+fuse-t25:
 	sudo $(UISP)  $(PROGRAMMER_ARGS) \
     -e \
-	  -U lfuse:w:0x6A:m \
-		-U hfuse:w:0xDF:m
+	  -U lfuse:w:0x62:m \
+		-U hfuse:w:0xD6:m
 
 clean:
 	rm -f *.hex *.eep *.obj *.o *.out

@@ -39,27 +39,4 @@ static void leds_off() {
   LED_PORT &= ~(WAKE | QUIET);
 }
 
-ISR(INT0_vect) {
-  // We don't do any work here. We just wake up from power-down.
-}
-
-void write_i2c_byte(uint8_t addr, uint8_t reg, uint8_t data) {
-  i2c_start(addr);
-  i2c_write(reg);
-  i2c_write(data);
-  i2c_stop();
-}
-
-uint8_t read_i2c_byte(uint8_t addr, uint8_t reg) {
-  uint8_t result = 0;
-
-  i2c_start(addr);
-  i2c_write(reg);
-
-  i2c_start(addr + 1);
-  result = i2c_read(0);
-  i2c_stop();
-  return result;
-}
-
 #endif  // guard

@@ -14,6 +14,8 @@
 #if !defined(__ATMEGA328_H__)
 #define __ATMEGA328_H__
 
+#include <avr/interrupt.h>
+#include <avr/io.h>
 #include <compat/twi.h>
 
 #define QUIET _BV(PB4)
@@ -54,6 +56,10 @@ static void enable_pin_interrupts() {
   EIMSK = BUTTON_INT;  // Enable INT0 interrupt.
 }
 
+ISR(INT0_vect) {
+  // We don't do any work here. We just wake up from power-down.
+}
+
 #define SCL_CLOCK (100000L)
 
 void i2c_init() {
@@ -91,6 +97,25 @@ uint8_t i2c_read(int ack) {
   while (!(TWCR & (1 << TWINT)))
     ;
   return TWDR;
+}
+
+void write_i2c_byte(uint8_t addr, uint8_t reg, uint8_t data) {
+  i2c_start(addr);
+  i2c_write(reg);
+  i2c_write(data);
+  i2c_stop();
+}
+
+uint8_t read_i2c_byte(uint8_t addr, uint8_t reg) {
+  uint8_t result = 0;
+
+  i2c_start(addr);
+  i2c_write(reg);
+
+  i2c_start(addr + 1);
+  result = i2c_read(0);
+  i2c_stop();
+  return result;
 }
 
 #endif  // #if !defined(__ATMEGA328_H__)
