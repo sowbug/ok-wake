@@ -27,23 +27,25 @@ CFLAGS=-g -Os -Wall -mcall-prologues -std=c99 -pedantic -Wundef \
   -DM_SECOND=0x$(M_SECOND)
 OBJ2HEX=avr-objcopy
 
-program : $(TARGET).hex
+SOURCES=main.c devices/USI_TWI_Master.c
+
+program: $(TARGET).hex
 	$(UISP) $(PROGRAMMER_ARGS) \
 	  -U flash:w:$(TARGET).hex
 
-load-eeprom : eeprom
+load-eeprom: eeprom
 	$(UISP) $(PROGRAMMER_ARGS) \
 	  -U eeprom:w:$(TARGET).eep
 
 eeprom: $(TARGET).eep
 
-%.obj : %.o
-	$(CC) $(CFLAGS) $< -o $@
+$(TARGET).out: $(SOURCES)
+	$(CC) $(CFLAGS) -o $(TARGET).out $(SOURCES)
 
-%.hex : main.obj
+%.hex: $(TARGET).out
 	$(OBJ2HEX) -j .text -j .data -O ihex $< $@
 
-%.eep : main.obj
+%.eep: $(TARGET).out
 	$(OBJ2HEX) -j .eeprom -O ihex $< $@
 
 prod: CFLAGS += -DPRODUCTION=1
@@ -62,5 +64,5 @@ fuse-t13:
 	  -U lfuse:w:0x6A:m \
 		-U hfuse:w:0xDF:m
 
-clean :
-	rm -f *.hex *.eep *.obj *.o a.out
+clean:
+	rm -f *.hex *.eep *.obj *.o *.out

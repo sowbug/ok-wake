@@ -4,16 +4,17 @@
  *
  */
 
-#if defined(__AVR_ATtiny13A__)
-#include "attiny13a.h"
-#include "avr310/USI_TWI_Master.h"
+#if !defined(__AVR_DEVICE_H__)
+#define __AVR_DEVICE_H__
+
+#if defined(__AVR_ATtiny25__) || \
+  defined (__AVR_ATtiny45__) || \
+  defined (__AVR_ATtiny85__)
+#include "USI_TWI_Master.h"
+#include "attinyx5.h"
 #elif defined (__AVR_ATmega328P__) || defined (__AVR_ATmega328__)
 #include "atmega328.h"
 #endif
-
-static int is_button_pressed() {
-  return !(BUTTON_PIN & BUTTON);
-}
 
 static void init_ports() {
   // LEDs output
@@ -49,9 +50,6 @@ void write_i2c_byte(uint8_t addr, uint8_t reg, uint8_t data) {
   i2c_stop();
 }
 
-void write_i2c(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t length) {
-}
-
 uint8_t read_i2c_byte(uint8_t addr, uint8_t reg) {
   uint8_t result = 0;
 
@@ -64,5 +62,4 @@ uint8_t read_i2c_byte(uint8_t addr, uint8_t reg) {
   return result;
 }
 
-void read_i2c(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t length) {
-}
+#endif  // guard

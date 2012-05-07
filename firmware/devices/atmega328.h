@@ -11,6 +11,9 @@
 // SCL      PB2  PC5 A5
 // SDA      PB0  PC4 A4
 
+#if !defined(__ATMEGA328_H__)
+#define __ATMEGA328_H__
+
 #include <compat/twi.h>
 
 #define QUIET _BV(PB4)
@@ -61,7 +64,6 @@ void i2c_init() {
   TWBR = ((F_CPU / SCL_CLOCK) - 16) / 2;
 }
 
-// Write byte
 void i2c_write(uint8_t byte) {
   TWDR = byte;
   TWCR = (1 << TWINT) | (1 << TWEN);
@@ -69,7 +71,6 @@ void i2c_write(uint8_t byte) {
     ;
 }
 
-// Start
 void i2c_start(uint8_t addr) {
   TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
   while (!(TWCR & (1 << TWINT)))
@@ -77,29 +78,10 @@ void i2c_start(uint8_t addr) {
   i2c_write(addr);
 }
 
-#if 0
-void i2c_start_wait(uint8_t addr) {
-  while (1) {
-    i2c_start(addr);
-    uint8_t twst;
-    twst = TW_STATUS & 0xF8;
-    if ((twst == TW_MT_SLA_NACK) || (twst == TW_MR_DATA_NACK)) {         
-        TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
-        while (TWCR & (1 << TWSTO))
-          ;          
-        continue;
-    }
-    break;
-  }
-}
-#endif
-
-// Stop
 void i2c_stop() {
   TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
 }
 
-// Read byte
 uint8_t i2c_read(int ack) {
   if (ack) {
     TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
@@ -110,4 +92,5 @@ uint8_t i2c_read(int ack) {
     ;
   return TWDR;
 }
-/// End
+
+#endif  // #if !defined(__ATMEGA328_H__)

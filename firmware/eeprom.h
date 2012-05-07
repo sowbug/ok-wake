@@ -4,6 +4,9 @@
  *
  */
 
+#if !defined(__EEPROM_H__)
+#define __EEPROM_H__
+
 #include <avr/eeprom.h>
 
 // Various sources say that a voltage problem can corrupt EEPROM address 0.
@@ -22,3 +25,4 @@ uint8_t EEMEM kSecond = M_SECOND;
 uint8_t EEMEM kWakeHour = 0x06;
 uint8_t EEMEM kWakeMinute = 0x00;
 
+#endif  // guard

@@ -4,6 +4,9 @@
  *
  */
 
+#if !defined(__ATTINYX5_H__)
+#define __ATTINYX5_H__
+
 // Function Tiny 328 Arduino
 // Quiet    PB4  PB4 10
 // Wake     PB3  PB2 12
@@ -43,3 +46,28 @@ static void enable_pin_interrupts() {
   MCUCR = _BV(ISC01);  // The falling edge of INT0 generates an interrupt.
   GIMSK = BUTTON_INT;  // Enable INT0 interrupt.
 }
+
+uint8_t i2c_buffer[3] = { RTC_ADDR };
+
+void i2c_init() {
+  USI_TWI_Master_Initialise();
+}
+
+void i2c_write(uint8_t byte) {
+  i2c_buffer[2] = byte;
+  USI_TWI_Start_Random_Write(i2c_buffer, 3);
+}
+
+void i2c_start(uint8_t addr) {
+  i2c_buffer[1] = addr;
+}
+
+void i2c_stop() {
+}
+
+uint8_t i2c_read(int ack) {
+  USI_TWI_Start_Random_Read(i2c_buffer, 3);
+  return i2c_buffer[2];
+}
+
+#endif  // #if !defined(__ATTINYX5_H__)

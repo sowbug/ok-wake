@@ -4,6 +4,9 @@
  *
  */
 
+#if !defined(__PCF8523_H__)
+#define __PCF8523_H__
+
 #define RTC_ADDR (0xD0)
 enum {
   RTC_CONTROL_1 = 0,
@@ -48,3 +51,5 @@ uint8_t clear_second_flag() {
   }
   return 0;
 }
+
+#endif  // guard

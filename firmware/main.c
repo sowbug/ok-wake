@@ -233,8 +233,8 @@ int main(void) {
 
     // We woke up!
     if (was_button_pressed()) {
-      //set_wake_time();
-      //continue;
+      set_wake_time();
+      continue;
     }
 
     int16_t minutes_until_wake = calculate_minutes_until_wake();
