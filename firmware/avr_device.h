@@ -2,6 +2,7 @@
  * OK Wake
  * https://github.com/sowbug/ok-wake/
  *
+ * Copyright (c) 2012 Mike Tsao.
  */
 
 #if !defined(__AVR_DEVICE_H__)

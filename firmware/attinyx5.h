@@ -2,6 +2,7 @@
  * OK Wake
  * https://github.com/sowbug/ok-wake/
  *
+ * Copyright (c) 2012 Mike Tsao.
  */
 
 #if !defined(__ATTINYX5_H__)

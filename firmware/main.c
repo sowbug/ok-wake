@@ -2,6 +2,7 @@
  * OK Wake
  * https://github.com/sowbug/ok-wake/
  *
+ * Copyright (c) 2012 Mike Tsao.
  */
 
 #include <avr/io.h>
@@ -30,7 +31,7 @@ uint8_t wake_minute;
 uint8_t second, minute, hour;  // in same memory order as registers
 
 // Side effect: clears value.
-uint8_t _was_button_pressed;
+static uint8_t _was_button_pressed = 0;
 uint8_t was_button_pressed() {
   uint8_t result = _was_button_pressed;
   _was_button_pressed = 0;
@@ -156,7 +157,8 @@ static void power_down() {
   // Go to sleep.
   sleep_mode();
 
-  // We've woken up. Turn back on any peripherals we need while running.
+  // We've woken up. Turn back on any peripherals we need while
+  // running.
   init_power_reduction_register(0);
   init_rtc();
 
@@ -165,7 +167,8 @@ static void power_down() {
   // going active).
   _was_button_pressed = !clear_rtc_interrupt_flags();
   if (!_was_button_pressed) {
-    // /INT1 on the '8523 must have gone low. Wait for it to come back.
+    // /INT1 on the '8523 must have gone low. Wait for it to come
+    // back.
     while (is_button_pressed())
       ;
   }
@@ -223,20 +226,18 @@ int main(void) {
 
   uint8_t state = STATE_INIT;
   while (1) {
-    // First thing we do is shut off. We'll be woken up by /INT.
-    power_down();
-
-    // We woke up!
     if (was_button_pressed()) {
       set_wake_time();
       continue;
     }
 
     int16_t minutes_until_wake = calculate_minutes_until_wake();
-    uint8_t in_pre_window = (minutes_until_wake < WAKE_WINDOW_PRE_MINUTES &&
-                             minutes_until_wake > 0);
-    uint8_t in_post_window = (minutes_until_wake > -WAKE_WINDOW_POST_MINUTES &&
-                              minutes_until_wake <= 0);
+    uint8_t in_pre_window =
+        (minutes_until_wake <= WAKE_WINDOW_PRE_MINUTES &&
+         minutes_until_wake > 0);
+    uint8_t in_post_window =
+        (minutes_until_wake >= -WAKE_WINDOW_POST_MINUTES &&
+         minutes_until_wake <= 0);
 
     if (!in_pre_window && !in_post_window && state != STATE_NIGHT) {
       state = start_NIGHT();
@@ -248,15 +249,19 @@ int main(void) {
       state = start_DAWN();
     }
     switch (state) {
-    case STATE_NIGHT:
-      handle_NIGHT();
-      break;
-    case STATE_TWILIGHT:
-      handle_TWILIGHT(minutes_until_wake);
-      break;
-    case STATE_DAWN:
-      handle_DAWN(-minutes_until_wake);
-      break;
+      case STATE_NIGHT:
+        handle_NIGHT();
+        break;
+      case STATE_TWILIGHT:
+        handle_TWILIGHT(minutes_until_wake);
+        break;
+      case STATE_DAWN:
+        handle_DAWN(-minutes_until_wake);
+        break;
     }
+
+    // We're in the right state. Power down, and we'll be woken up by
+    // /INT. This function will return when we wake up again.
+    power_down();
   }
 }

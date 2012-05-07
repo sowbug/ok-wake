@@ -2,6 +2,7 @@
  * OK Wake
  * https://github.com/sowbug/ok-wake/
  *
+ * Copyright (c) 2012 Mike Tsao.
  */
 
 // Function Tiny 328 Arduino
@@ -52,7 +53,7 @@ static void init_power_reduction_register(int for_power_down) {
 }
 
 static void enable_pin_interrupts() {
-  EICRA = _BV(ISC01);  // The falling edge of INT0 generates an interrupt.
+  EICRA = _BV(ISC01);  // Falling edge of INT0 generates an interrupt.
   EIMSK = BUTTON_INT;  // Enable INT0 interrupt.
 }
 

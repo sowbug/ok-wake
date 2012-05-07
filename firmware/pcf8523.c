@@ -2,6 +2,7 @@
  * OK Wake
  * https://github.com/sowbug/ok-wake/
  *
+ * Copyright (c) 2012 Mike Tsao.
  */
 
 #include <util/delay.h>
@@ -52,17 +53,13 @@ uint8_t is_rtc_connected() {
 }
 
 uint8_t rtc_write_verify() {
-#if 0
   uint8_t sample = read_i2c_byte(RTC_ADDR, RTC_TMR_B_REG) + 7;
   write_i2c_byte(RTC_ADDR, RTC_TMR_B_REG, sample);
   return read_i2c_byte(RTC_ADDR, RTC_TMR_B_REG) == sample;
-#else
-  return 1;
-#endif
 }
 
-void set_rtc_time(uint8_t year, uint8_t month, uint8_t day, uint8_t hour,
-                  uint8_t minute, uint8_t second) {
+void set_rtc_time(uint8_t year, uint8_t month, uint8_t day,
+                  uint8_t hour, uint8_t minute, uint8_t second) {
   write_i2c_byte(RTC_ADDR, RTC_YEARS, year);
   write_i2c_byte(RTC_ADDR, RTC_MONTHS, month);
   write_i2c_byte(RTC_ADDR, RTC_DAYS, day);
@@ -72,9 +69,11 @@ void set_rtc_time(uint8_t year, uint8_t month, uint8_t day, uint8_t hour,
 }
 
 uint8_t clear_rtc_interrupt_flags() {
+  // TODO: these constants can probably be collapsed into one.
   uint8_t rc2 = read_i2c_byte(RTC_ADDR, RTC_CONTROL_2);
   if ((rc2 & (1 << 3)) != 0 || (rc2 & (1 << 4)) != 0) {
-    write_i2c_byte(RTC_ADDR, RTC_CONTROL_2, rc2 & ~((1 << 3) | (1 << 4)));
+    write_i2c_byte(RTC_ADDR, RTC_CONTROL_2,
+                   rc2 & ~((1 << 3) | (1 << 4)));
     return 1;
   }
   return 0;

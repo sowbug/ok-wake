@@ -2,6 +2,7 @@
  * OK Wake
  * https://github.com/sowbug/ok-wake/
  *
+ * Copyright (c) 2012 Mike Tsao.
  */
 
 #if !defined(__EEPROM_H__)
@@ -9,12 +10,12 @@
 
 #include <avr/eeprom.h>
 
-// Various sources say that a voltage problem can corrupt EEPROM address 0.
-// So we'll block it off and ignore it.
+// Various sources say that a voltage problem can corrupt EEPROM
+// address 0. So we'll block it off and ignore it.
 uint8_t EEMEM kNeverUse = 0x55;
 
-// These values will determine the contents of the .eep file, which can be
-// used to program the EEPROM.
+// These values will determine the contents of the .eep file, which
+// can be used to program the EEPROM.
 uint8_t EEMEM kShouldSet = 0x01;
 uint8_t EEMEM kYear = M_YEAR;
 uint8_t EEMEM kMonth = M_MONTH;
