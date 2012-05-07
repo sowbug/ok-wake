@@ -160,11 +160,12 @@ static void power_down() {
   init_power_reduction_register(0);
   init_rtc();
 
-  // If we woke up and the '8523's SF bit is clear, then it's a safe guess
-  // the button press (as opposed to the '8523's /INT1 going active).
-  _was_button_pressed = !clear_second_flag();
+  // If we woke up and the '8523's SF and AF bits are clear, then it's
+  // a safe guess the button press (as opposed to the '8523's /INT1
+  // going active).
+  _was_button_pressed = !clear_rtc_interrupt_flags();
   if (!_was_button_pressed) {
-    // /INT1 must have gone low. Wait for it to come back.
+    // /INT1 on the '8523 must have gone low. Wait for it to come back.
     while (is_button_pressed())
       ;
   }

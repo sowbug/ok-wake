@@ -71,10 +71,10 @@ void set_rtc_time(uint8_t year, uint8_t month, uint8_t day, uint8_t hour,
   write_i2c_byte(RTC_ADDR, RTC_SECONDS, second);
 }
 
-uint8_t clear_second_flag() {
+uint8_t clear_rtc_interrupt_flags() {
   uint8_t rc2 = read_i2c_byte(RTC_ADDR, RTC_CONTROL_2);
-  if ((rc2 & (1 << 4)) != 0) {
-    write_i2c_byte(RTC_ADDR, RTC_CONTROL_2, rc2 & ~(1 << 4));
+  if ((rc2 & (1 << 3)) != 0 || (rc2 & (1 << 4)) != 0) {
+    write_i2c_byte(RTC_ADDR, RTC_CONTROL_2, rc2 & ~((1 << 3) | (1 << 4)));
     return 1;
   }
   return 0;

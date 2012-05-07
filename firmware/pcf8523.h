@@ -18,7 +18,7 @@ uint8_t rtc_write_verify();
 void set_rtc_time(uint8_t year, uint8_t month, uint8_t day, uint8_t hour,
                   uint8_t minute, uint8_t second);
 
-uint8_t clear_second_flag();
+uint8_t clear_rtc_interrupt_flags();
 
 void set_rtc_alarm(uint8_t wake_hour, uint8_t wake_minute);
 
