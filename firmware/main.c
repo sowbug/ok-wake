@@ -118,14 +118,14 @@ static void read_wake_time() {
 }
 
 static void set_alarm() {
-  set_rtc_alarm(add_decimal_to_bcd_time(wake_time_bcd,
+  set_rtc_alarm(add_minutes_to_bcd_time(wake_time_bcd,
                                         -WAKE_WINDOW_PRE_MINUTES));
 }
 
 // The idea is you push the button at 6pm, and it'll set the clock for a
 // wakeup time of 6am.
 static void set_wake_time() {
-  wake_time_bcd = add_decimal_to_bcd_time(time_bcd, MINUTES_IN_HALF_DAY);
+  wake_time_bcd = add_minutes_to_bcd_time(time_bcd, MINUTES_IN_HALF_DAY);
 
   eeprom_update_byte(&kWakeHour, wake_time_bcd >> 8);
   eeprom_update_byte(&kWakeMinute, wake_time_bcd & 0xff);
