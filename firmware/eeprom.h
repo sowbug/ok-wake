@@ -25,5 +25,7 @@ uint8_t EEMEM kMinute = M_MINUTE;
 uint8_t EEMEM kSecond = M_SECOND;
 uint8_t EEMEM kWakeHour = 0x06;
 uint8_t EEMEM kWakeMinute = 0x00;
+uint8_t EEMEM kAlarmHour = 0x05;  // TODO: these are temporary until I figure out BCD/time math
+uint8_t EEMEM kAlarmMinute = 0x30;
 
 #endif  // guard

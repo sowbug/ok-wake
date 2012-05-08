@@ -36,10 +36,18 @@ enum {
   RTC_TMR_B_REG,
 };
 
-#define RTC_CLKOUT_DISABLED ((1 << 3) | (1 << 4) | (1 << 5))
+const uint8_t AF = _BV(3);
+const uint8_t AIE = _BV(1);
+const uint8_t RTC_CLKOUT_DISABLED = (_BV(3) | _BV(4) | _BV(5));
+const uint8_t SF = _BV(4);
+const uint8_t SIE = _BV(2);
 
 void init_rtc() {
   i2c_init();
+}
+
+void reset_rtc() {
+  write_i2c_byte(RTC_ADDR, RTC_CONTROL_1, 0x58);
 }
 
 static uint8_t read_seconds() {
@@ -69,24 +77,16 @@ void set_rtc_time(uint8_t year, uint8_t month, uint8_t day,
 }
 
 uint8_t clear_rtc_interrupt_flags() {
-  // TODO: these constants can probably be collapsed into one.
-  uint8_t rc2 = read_i2c_byte(RTC_ADDR, RTC_CONTROL_2);
-  if ((rc2 & (1 << 3)) != 0 || (rc2 & (1 << 4)) != 0) {
-    write_i2c_byte(RTC_ADDR, RTC_CONTROL_2,
-                   rc2 & ~((1 << 3) | (1 << 4)));
-    return 1;
-  }
-  return 0;
+  uint8_t rc2 = read_i2c_byte(RTC_ADDR, RTC_CONTROL_2) & (SF | AF);
+  write_i2c_byte(RTC_ADDR, RTC_CONTROL_2, 0);  // Just zero the whole thing
+  return rc2 != 0;
 }
 
 void set_rtc_alarm(uint8_t wake_hour, uint8_t wake_minute) {
-  // The (1 << 7) enables the alarm component.
-  write_i2c_byte(RTC_ADDR, RTC_MINUTE_ALARM,
-                 (1 << 7) + decimal_to_bcd(wake_minute));
-  write_i2c_byte(RTC_ADDR, RTC_HOUR_ALARM,
-                 (1 << 7) + decimal_to_bcd(wake_hour));
-  uint8_t rc1 = read_i2c_byte(RTC_ADDR, RTC_CONTROL_1);
-  write_i2c_byte(RTC_ADDR, RTC_CONTROL_1, rc1 | (1 << 1));  // AIE=1
+  write_i2c_byte(RTC_ADDR, RTC_MINUTE_ALARM, wake_minute);
+  write_i2c_byte(RTC_ADDR, RTC_HOUR_ALARM, wake_hour);
+  write_i2c_byte(RTC_ADDR, RTC_CONTROL_1,
+                 read_i2c_byte(RTC_ADDR, RTC_CONTROL_1) | AIE);
 }
 
 // Stop the default 32.768KHz CLKOUT signal on INT1.
@@ -97,23 +97,14 @@ void stop_32768_clkout() {
 void set_second_interrupt(uint8_t enable) {
   uint8_t rc1 = read_i2c_byte(RTC_ADDR, RTC_CONTROL_1);
   if (enable) {
-    rc1 |= (1 << 2);  // SIE=1
+    rc1 |= SIE;
   } else {
-    rc1 &= ~(1 << 2);  // SIE=0
+    rc1 &= ~SIE;
   }
   write_i2c_byte(RTC_ADDR, RTC_CONTROL_1, rc1);
 }
 
 void refresh_time(uint8_t *time) {
-  *time++ = bcd_to_decimal(read_i2c_byte(RTC_ADDR, RTC_HOURS));
-  *time++ = bcd_to_decimal(read_i2c_byte(RTC_ADDR, RTC_MINUTES));
-  *time++ = bcd_to_decimal(read_seconds());
-}
-
-uint8_t bcd_to_decimal(uint8_t bcd) {
-  return (bcd & 0x0f) + ((bcd >> 4) & 0x0f) * 10;
-}
-
-uint8_t decimal_to_bcd(uint8_t decimal) {
-  return ((decimal / 10) * 16) + (decimal % 10);
+  *time++ = read_i2c_byte(RTC_ADDR, RTC_HOURS);
+  *time++ = read_i2c_byte(RTC_ADDR, RTC_MINUTES);
 }

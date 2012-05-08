@@ -11,6 +11,7 @@
 #include <util/delay.h>
 
 #include "avr_device.h"
+#include "bcd.h"
 #include "eeprom.h"
 
 enum {
@@ -20,15 +21,18 @@ enum {
   STATE_DAWN,
 };
 
+const uint8_t SET_WAKE_OFFSET_BCD = 0x12;
+const uint8_t HOURS_IN_DAY_BCD = 0x24;
+
 // How long before wake time we should start blinking lights.
-#define WAKE_WINDOW_PRE_MINUTES (30)
+const uint8_t WAKE_WINDOW_PRE_MINUTES = 30;
 
 // How long after wake time we should keep blinking lights.
-#define WAKE_WINDOW_POST_MINUTES (10)
+const uint8_t WAKE_WINDOW_POST_MINUTES = 10;
 
-uint8_t wake_hour;
-uint8_t wake_minute;
-uint8_t second, minute, hour;  // in same memory order as registers
+uint8_t wake_hours, wake_minutes;
+uint8_t alarm_hours, alarm_minutes;
+uint8_t hours, minutes;
 
 // Side effect: clears value.
 static uint8_t _was_button_pressed = 0;
@@ -85,6 +89,7 @@ static void breathe_wake() {
       cycles--;
     }
   }
+  leds_off();
 }
 
 static uint8_t maybe_set_rtc_time() {
@@ -107,31 +112,46 @@ static uint8_t maybe_set_rtc_time() {
 }
 
 static void read_wake_time() {
-  wake_hour = bcd_to_decimal(eeprom_read_byte(&kWakeHour));
-  wake_minute = bcd_to_decimal(eeprom_read_byte(&kWakeMinute));
+  wake_hours = eeprom_read_byte(&kWakeHour);
+  wake_minutes = eeprom_read_byte(&kWakeMinute);
+  alarm_hours = eeprom_read_byte(&kAlarmHour);
+  alarm_minutes = eeprom_read_byte(&kAlarmMinute);
 }
 
 // The idea is you push the button at 6pm, and it'll set the clock for a
 // wakeup time of 6am.
 static void set_wake_time() {
-#define SET_WAKE_OFFSET_MINUTES (60 * 12)
-  int16_t now_plus = hour * 60 + minute + SET_WAKE_OFFSET_MINUTES;
-  while (now_plus >= (60 * 24)) {
-    now_plus -= 60 * 24;
+  wake_hours = bcd_add(hours, SET_WAKE_OFFSET_BCD);
+  if (wake_hours >= HOURS_IN_DAY_BCD) {
+    wake_hours = bcd_sub(wake_hours, HOURS_IN_DAY_BCD);
   }
-  wake_hour = now_plus / 60;
-  wake_minute = now_plus % 60;
-  eeprom_update_byte(&kWakeHour, decimal_to_bcd(wake_hour));
-  eeprom_update_byte(&kWakeMinute, decimal_to_bcd(wake_minute));
-  set_rtc_alarm(wake_hour, wake_minute);
+  wake_minutes = minutes;
+  eeprom_update_byte(&kWakeHour, wake_hours);
+  eeprom_update_byte(&kWakeMinute, wake_minutes);
+  set_rtc_alarm(wake_hours, wake_minutes);
+
+  // TODO: this is all wrong. We need to calculate alarm_hour & alarm_minute
+  // as a function of wake_hours/wake_minutes - WAKE_WINDOW_PRE_MINUTES.
 
   flicker_leds(1);
 }
 
+static int16_t mul60(int16_t a) {
+  return (a << 6) - (a << 2);
+}
+
+static uint8_t mul10(uint8_t a) {
+  return (a << 3) + (a << 1);
+}
+
+static uint8_t bcd_to_decimal(uint8_t bcd) {
+  return (bcd & 0x0f) + mul10((bcd >> 4) & 0x0f);
+}
+
 static int16_t calculate_minutes_until_wake() {
-  int16_t now = hour * 60 + minute;
-  int16_t wake_time = wake_hour * 60 + wake_minute;
-  return now - wake_time;
+  int16_t now = mul60(bcd_to_decimal(hours)) + minutes;
+  int16_t wake_time = mul60(bcd_to_decimal(wake_hours)) + wake_minutes;
+  return wake_time - now;
 }
 
 static uint8_t start_NIGHT() {
@@ -154,8 +174,13 @@ static void power_down() {
   init_power_reduction_register(1);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
 
-  // Go to sleep.
-  sleep_mode();
+  // We skip sleeping if the RTC is already trying to wake us up.
+  enable_pin_interrupts(1);
+  if (!clear_rtc_interrupt_flags()) {
+    // Go to sleep.
+    sleep_mode();
+  }
+  enable_pin_interrupts(0);
 
   // We've woken up. Turn back on any peripherals we need while
   // running.
@@ -166,22 +191,22 @@ static void power_down() {
   // a safe guess the button press (as opposed to the '8523's /INT1
   // going active).
   _was_button_pressed = !clear_rtc_interrupt_flags();
-  if (!_was_button_pressed) {
-    // /INT1 on the '8523 must have gone low. Wait for it to come
-    // back.
-    while (is_button_pressed())
-      ;
-  }
 
-  // Now wait for the rising edge to pass.
-  refresh_time(&hour);
+  // Now wait for the rising edge to pass. This will trigger another
+  // interrupt, but who cares -- the interrupt doesn't do anything
+  // when we're already in full-power mode.
+  while (is_button_pressed())
+    ;
+
+  // We're awake and ready to go. Get the correct time copied locally.
+  refresh_time(&hours);
 }
 
 static void handle_NIGHT() {
 }
 
 static void handle_TWILIGHT(int16_t minutes_left) {
-  if (minutes_left <= 3) {
+  if (minutes_left <= 5) {
     flicker_quiet(2);
     flicker_wake(1);
   } else {
@@ -195,7 +220,7 @@ static void handle_DAWN(int16_t minutes_elapsed) {
 
 static void do_i2c_diagnostics() {
   while (!is_rtc_connected()) {
-    flicker_leds(4);
+    flicker_leds(2);
     _delay_ms(500);
   }
 
@@ -204,14 +229,15 @@ static void do_i2c_diagnostics() {
     _delay_ms(500);
   }
 
-  flicker_wake(4);
+  breathe_wake();
 }
 
-int main(void) {
+static void init_system() {
+  sei();
   init_ports();
   init_rtc();
+  reset_rtc();
   stop_32768_clkout();
-  enable_pin_interrupts();
   do_i2c_diagnostics();
 
   if (maybe_set_rtc_time()) {
@@ -219,10 +245,46 @@ int main(void) {
   }
 
   read_wake_time();
-  set_rtc_alarm(wake_hour, wake_minute);
-  set_second_interrupt(0);
+  set_rtc_alarm(alarm_hours, alarm_minutes);
+}
 
-  sei();
+static uint8_t do_state_work(uint8_t state) {
+  int16_t minutes_until_wake = calculate_minutes_until_wake();
+  uint8_t in_pre_window =
+    (minutes_until_wake <= WAKE_WINDOW_PRE_MINUTES &&
+     minutes_until_wake > 0);
+  uint8_t in_post_window =
+    (minutes_until_wake >= -WAKE_WINDOW_POST_MINUTES &&
+     minutes_until_wake <= 0);
+  if (minutes_until_wake < 0) {
+    minutes_until_wake = -minutes_until_wake;
+  }
+
+  if (!in_pre_window && !in_post_window && state != STATE_NIGHT) {
+    state = start_NIGHT();
+  }
+  if (in_pre_window && state != STATE_TWILIGHT) {
+    state = start_TWILIGHT();
+  }
+  if (in_post_window && state != STATE_DAWN) {
+    state = start_DAWN();
+  }
+  switch (state) {
+  case STATE_NIGHT:
+    handle_NIGHT();
+    break;
+  case STATE_TWILIGHT:
+    handle_TWILIGHT(minutes_until_wake);
+    break;
+  case STATE_DAWN:
+    handle_DAWN(minutes_until_wake);
+    break;
+  }
+  return state;
+}
+
+int main(void) {
+  init_system();
 
   uint8_t state = STATE_INIT;
   while (1) {
@@ -231,34 +293,7 @@ int main(void) {
       continue;
     }
 
-    int16_t minutes_until_wake = calculate_minutes_until_wake();
-    uint8_t in_pre_window =
-        (minutes_until_wake <= WAKE_WINDOW_PRE_MINUTES &&
-         minutes_until_wake > 0);
-    uint8_t in_post_window =
-        (minutes_until_wake >= -WAKE_WINDOW_POST_MINUTES &&
-         minutes_until_wake <= 0);
-
-    if (!in_pre_window && !in_post_window && state != STATE_NIGHT) {
-      state = start_NIGHT();
-    }
-    if (in_pre_window && state != STATE_TWILIGHT) {
-      state = start_TWILIGHT();
-    }
-    if (in_post_window && state != STATE_DAWN) {
-      state = start_DAWN();
-    }
-    switch (state) {
-      case STATE_NIGHT:
-        handle_NIGHT();
-        break;
-      case STATE_TWILIGHT:
-        handle_TWILIGHT(minutes_until_wake);
-        break;
-      case STATE_DAWN:
-        handle_DAWN(-minutes_until_wake);
-        break;
-    }
+    state = do_state_work(state);
 
     // We're in the right state. Power down, and we'll be woken up by
     // /INT. This function will return when we wake up again.

@@ -11,6 +11,7 @@
 #include <avr/io.h>
 
 void init_rtc();
+void reset_rtc();
 
 uint8_t is_rtc_connected();
 
@@ -23,15 +24,12 @@ uint8_t clear_rtc_interrupt_flags();
 
 void set_rtc_alarm(uint8_t wake_hour, uint8_t wake_minute);
 
-// Stop the default 32.768KHz CLKOUT signal on INT1.
+// Stop the default 32.768KHz CLKOUT signal on /INT1.
 void stop_32768_clkout();
 
 void set_second_interrupt(uint8_t enable);
 
+// Expects a pointer to an array of two uint8_t: minutes, then hours.
 void refresh_time(uint8_t *time);
-
-uint8_t bcd_to_decimal(uint8_t bcd);
-
-uint8_t decimal_to_bcd(uint8_t decimal);
 
 #endif  // guard

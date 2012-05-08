@@ -43,7 +43,7 @@ int is_button_pressed();
 
 void init_power_reduction_register(int for_power_down);
 
-void enable_pin_interrupts();
+void enable_pin_interrupts(uint8_t enable);
 
 void i2c_init();
 

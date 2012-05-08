@@ -24,9 +24,9 @@ void init_power_reduction_register(int for_power_down) {
   }
 }
 
-void enable_pin_interrupts() {
+void enable_pin_interrupts(uint8_t enable) {
   PCMSK = _BV(PCINT1);  // PB1 any change.
-  GIMSK = BUTTON_INT;  // Enable INT0 interrupt.
+  GIMSK = enable ? BUTTON_INT : 0;  // Enable INT0 interrupt.
 }
 
 void i2c_init() {
