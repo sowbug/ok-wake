@@ -8,7 +8,7 @@
 #if !defined(__PCF8523_H__)
 #define __PCF8523_H__
 
-#include <avr/io.h>
+#include <inttypes.h>
 
 void init_rtc();
 void reset_rtc();
@@ -22,14 +22,13 @@ void set_rtc_time(uint8_t year, uint8_t month, uint8_t day,
 
 uint8_t clear_rtc_interrupt_flags();
 
-void set_rtc_alarm(uint8_t wake_hour, uint8_t wake_minute);
+void set_rtc_alarm(uint16_t time_bcd);
 
 // Stop the default 32.768KHz CLKOUT signal on /INT1.
 void stop_32768_clkout();
 
 void set_second_interrupt(uint8_t enable);
 
-// Expects a pointer to an array of two uint8_t: minutes, then hours.
-void refresh_time(uint8_t *time);
+void refresh_time(uint16_t *time_bcd);
 
 #endif  // guard

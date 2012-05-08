@@ -5,14 +5,22 @@
  * Copyright (c) 2012 Mike Tsao.
  */
 
-#include <util/delay.h>
 #include "pcf8523.h"
 #include "i2c.h"
+
+#include <avr/io.h>
+#include <util/delay.h>
 
 // forward declaration. TODO: fix!
 void i2c_init();
 
-#define RTC_ADDR (0xD0)
+const uint8_t AF = _BV(3);
+const uint8_t AIE = _BV(1);
+const uint8_t RTC_ADDR = 0xD0;
+const uint8_t RTC_CLKOUT_DISABLED = (_BV(3) | _BV(4) | _BV(5));
+const uint8_t SF = _BV(4);
+const uint8_t SIE = _BV(2);
+
 enum {
   RTC_CONTROL_1 = 0,
   RTC_CONTROL_2,
@@ -35,12 +43,6 @@ enum {
   RTC_TMR_B_FREQ_CTRL,
   RTC_TMR_B_REG,
 };
-
-const uint8_t AF = _BV(3);
-const uint8_t AIE = _BV(1);
-const uint8_t RTC_CLKOUT_DISABLED = (_BV(3) | _BV(4) | _BV(5));
-const uint8_t SF = _BV(4);
-const uint8_t SIE = _BV(2);
 
 void init_rtc() {
   i2c_init();
@@ -82,9 +84,9 @@ uint8_t clear_rtc_interrupt_flags() {
   return rc2 != 0;
 }
 
-void set_rtc_alarm(uint8_t wake_hour, uint8_t wake_minute) {
-  write_i2c_byte(RTC_ADDR, RTC_MINUTE_ALARM, wake_minute);
-  write_i2c_byte(RTC_ADDR, RTC_HOUR_ALARM, wake_hour);
+void set_rtc_alarm(uint16_t time_bcd) {
+  write_i2c_byte(RTC_ADDR, RTC_MINUTE_ALARM, time_bcd);
+  write_i2c_byte(RTC_ADDR, RTC_HOUR_ALARM, time_bcd >> 8);
   write_i2c_byte(RTC_ADDR, RTC_CONTROL_1,
                  read_i2c_byte(RTC_ADDR, RTC_CONTROL_1) | AIE);
 }
@@ -106,7 +108,7 @@ void set_second_interrupt(uint8_t enable) {
   write_i2c_byte(RTC_ADDR, RTC_CONTROL_1, rc1);
 }
 
-void refresh_time(uint8_t *time) {
-  *time++ = read_i2c_byte(RTC_ADDR, RTC_HOURS);
-  *time++ = read_i2c_byte(RTC_ADDR, RTC_MINUTES);
+void refresh_time(uint16_t *time_bcd) {
+  *time_bcd = (read_i2c_byte(RTC_ADDR, RTC_HOURS) << 8) |
+      read_i2c_byte(RTC_ADDR, RTC_MINUTES);
 }

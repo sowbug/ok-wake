@@ -5,14 +5,14 @@
  * Copyright (c) 2012 Mike Tsao.
  */
 
+#include "avr_device.h"
+#include "bcd.h"
+#include "eeprom.h"
+
 #include <avr/io.h>
 #include <avr/sleep.h>
 #include <inttypes.h>
 #include <util/delay.h>
-
-#include "avr_device.h"
-#include "bcd.h"
-#include "eeprom.h"
 
 enum {
   STATE_INIT = 0,
@@ -21,21 +21,17 @@ enum {
   STATE_DAWN,
 };
 
-const uint8_t SET_WAKE_OFFSET_BCD = 0x12;
-const uint8_t HOURS_IN_DAY_BCD = 0x24;
-
 // How long before wake time we should start blinking lights.
 const uint8_t WAKE_WINDOW_PRE_MINUTES = 30;
 
 // How long after wake time we should keep blinking lights.
 const uint8_t WAKE_WINDOW_POST_MINUTES = 10;
 
-uint8_t wake_hours, wake_minutes;
-uint8_t alarm_hours, alarm_minutes;
-uint8_t hours, minutes;
+uint16_t wake_time_bcd;
+uint16_t time_bcd;
 
 // Side effect: clears value.
-static uint8_t _was_button_pressed = 0;
+static uint8_t _was_button_pressed;
 uint8_t was_button_pressed() {
   uint8_t result = _was_button_pressed;
   _was_button_pressed = 0;
@@ -104,6 +100,7 @@ static uint8_t maybe_set_rtc_time() {
   }
 
   // Update RTC.
+  // TODO: this could be a single read.
   set_rtc_time(eeprom_read_byte(&kYear),
                eeprom_read_byte(&kMonth),
                eeprom_read_byte(&kDay),
@@ -116,46 +113,24 @@ static uint8_t maybe_set_rtc_time() {
 }
 
 static void read_wake_time() {
-  wake_hours = eeprom_read_byte(&kWakeHour);
-  wake_minutes = eeprom_read_byte(&kWakeMinute);
-  alarm_hours = eeprom_read_byte(&kAlarmHour);
-  alarm_minutes = eeprom_read_byte(&kAlarmMinute);
+  wake_time_bcd = (eeprom_read_byte(&kWakeHour) << 8) +
+      eeprom_read_byte(&kWakeMinute);
+}
+
+static void set_alarm() {
+  set_rtc_alarm(add_decimal_to_bcd_time(wake_time_bcd,
+                                        -WAKE_WINDOW_PRE_MINUTES));
 }
 
 // The idea is you push the button at 6pm, and it'll set the clock for a
 // wakeup time of 6am.
 static void set_wake_time() {
-  wake_hours = bcd_add(hours, SET_WAKE_OFFSET_BCD);
+  wake_time_bcd = add_decimal_to_bcd_time(time_bcd, MINUTES_IN_HALF_DAY);
 
-  if (wake_hours >= HOURS_IN_DAY_BCD) {
-    wake_hours = bcd_sub(wake_hours, HOURS_IN_DAY_BCD);
-  }
-
-  wake_minutes = minutes;
-  eeprom_update_byte(&kWakeHour, wake_hours);
-  eeprom_update_byte(&kWakeMinute, wake_minutes);
-  set_rtc_alarm(wake_hours, wake_minutes);
-  // TODO: this is all wrong. We need to calculate alarm_hour & alarm_minute
-  // as a function of wake_hours/wake_minutes - WAKE_WINDOW_PRE_MINUTES.
+  eeprom_update_byte(&kWakeHour, wake_time_bcd >> 8);
+  eeprom_update_byte(&kWakeMinute, wake_time_bcd & 0xff);
+  set_alarm();
   flicker_leds(1);
-}
-
-static int16_t mul60(int16_t a) {
-  return (a << 6) - (a << 2);
-}
-
-static uint8_t mul10(uint8_t a) {
-  return (a << 3) + (a << 1);
-}
-
-static uint8_t bcd_to_decimal(uint8_t bcd) {
-  return (bcd & 0x0f) + mul10((bcd >> 4) & 0x0f);
-}
-
-static int16_t calculate_minutes_until_wake() {
-  int16_t now = mul60(bcd_to_decimal(hours)) + minutes;
-  int16_t wake_time = mul60(bcd_to_decimal(wake_hours)) + wake_minutes;
-  return wake_time - now;
 }
 
 static uint8_t start_NIGHT() {
@@ -202,7 +177,7 @@ static void power_down() {
     ;
 
   // We're awake and ready to go. Get the correct time copied locally.
-  refresh_time(&hours);
+  refresh_time(&time_bcd);
 }
 
 static void handle_NIGHT() {
@@ -248,11 +223,12 @@ static void init_system() {
   }
 
   read_wake_time();
-  set_rtc_alarm(alarm_hours, alarm_minutes);
+  set_alarm();
 }
 
 static uint8_t do_state_work(uint8_t state) {
-  int16_t minutes_until_wake = calculate_minutes_until_wake();
+  int16_t minutes_until_wake = smart_time_until_alarm(time_bcd,
+                                                      wake_time_bcd);
   uint8_t in_pre_window =
     (minutes_until_wake <= WAKE_WINDOW_PRE_MINUTES &&
      minutes_until_wake > 0);
