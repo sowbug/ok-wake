@@ -3,6 +3,7 @@
 *.eep
 *.ger
 *.gpi
+*.orig
 *.out
 *.pro
 *.s#*
