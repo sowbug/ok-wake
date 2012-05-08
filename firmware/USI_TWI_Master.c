@@ -7,12 +7,6 @@
 #include <avr/io.h>
 #include "USI_TWI_Master.h"
 
-unsigned char USI_TWI_Start_Transceiver_With_Data(unsigned char *,
-                                                  unsigned char);
-unsigned char USI_TWI_Master_Transfer(unsigned char);
-unsigned char USI_TWI_Master_Stop(void);
-unsigned char USI_TWI_Master_Start(void);
-
 union USI_TWI_state {
   unsigned int errorState;
   struct {
@@ -39,21 +33,62 @@ unsigned char USI_TWI_Get_State_Info(void) {
   return (USI_TWI_state.errorState);
 }
 
+unsigned char USI_TWI_Master_Start(void) {
+  /* Release SCL to ensure that (repeated) Start can be performed */
+  PORT_USI |= (1 << PIN_USI_SCL);
+
+  while (!(PORT_USI & (1 << PIN_USI_SCL)));  // Verify that SCL becomes high.
+
+  _delay_us(T2_TWI);
+
+  /* Generate Start Condition */
+  PORT_USI &= ~(1 << PIN_USI_SDA);  // Force SDA LOW.
+  _delay_us(T4_TWI);
+  PORT_USI &= ~(1 << PIN_USI_SCL);  // Pull SCL LOW.
+  PORT_USI |= (1 << PIN_USI_SDA);  // Release SDA.
+  return TRUE;
+}
+
+unsigned char USI_TWI_Master_Stop(void) {
+  PORT_USI &= ~(1 << PIN_USI_SDA);  // Pull SDA low.
+  PORT_USI |= (1 << PIN_USI_SCL);  // Release SCL.
+
+  while (!(PIN_USI & (1 << PIN_USI_SCL))); // Wait for SCL to go high.
+
+  _delay_us(T4_TWI);
+  PORT_USI |= (1 << PIN_USI_SDA);  // Release SDA.
+  _delay_us(T2_TWI);
+  return TRUE;
+}
+
 /*
- * USI Normal Read / Write Function Transmit and receive function. LSB of first
- * byte in buffer indicates if a read or write cycles is performed. If set a
- * read operation is performed.
- *
- * Function generates (Repeated) Start Condition, sends address and R/W,
- * Reads/Writes Data, and verifies/sends ACK.
- *
- * Success or error code is returned. Error codes are defined in
- * USI_TWI_Master.h.
+ * Data to be sent has to be placed into the USIDR prior to calling this
+ * function. Data read, will be return'ed from the function.
  */
-unsigned char USI_TWI_Start_Read_Write(unsigned char *msg,
-                                       unsigned char msgSize) {
-  USI_TWI_state.errorState = 0;       // Clears all mode bits also
-  return (USI_TWI_Start_Transceiver_With_Data(msg, msgSize));
+unsigned char USI_TWI_Master_Transfer(unsigned char temp) {
+  USISR = temp;  // Set USISR according to temp.
+
+  // Prepare clocking.
+  temp  = (0 << USISIE) | (0 << USIOIE) |
+      (1 << USIWM1) | (0 << USIWM0) |
+      (1 << USICS1) | (0 << USICS0) | (1 << USICLK) |
+      (1 << USITC);
+
+  do {
+    _delay_us(T2_TWI);
+    USICR = temp;  // Generate positve SCL edge.
+
+    while (!(PIN_USI & (1 << PIN_USI_SCL))); // Wait for SCL to go high.
+
+    _delay_us(T4_TWI);
+    USICR = temp;  // Generate negative SCL edge.
+  } while (!(USISR & (1 << USIOIF)));  // Check for transfer complete.
+
+  _delay_us(T2_TWI);
+  temp  = USIDR;  // Read out data.
+  USIDR = 0xFF;  // Release SDA.
+  DDR_USI |= (1 << PIN_USI_SDA);  // Enable SDA as output.
+  return temp;  // Return the data from the USIDR
 }
 
 /*
@@ -162,59 +197,18 @@ unsigned char USI_TWI_Start_Transceiver_With_Data(unsigned char *msg,
 }
 
 /*
- * Data to be sent has to be placed into the USIDR prior to calling this
- * function. Data read, will be return'ed from the function.
+ * USI Normal Read / Write Function Transmit and receive function. LSB of first
+ * byte in buffer indicates if a read or write cycles is performed. If set a
+ * read operation is performed.
+ *
+ * Function generates (Repeated) Start Condition, sends address and R/W,
+ * Reads/Writes Data, and verifies/sends ACK.
+ *
+ * Success or error code is returned. Error codes are defined in
+ * USI_TWI_Master.h.
  */
-unsigned char USI_TWI_Master_Transfer(unsigned char temp) {
-  USISR = temp;  // Set USISR according to temp.
-
-  // Prepare clocking.
-  temp  = (0 << USISIE) | (0 << USIOIE) |
-      (1 << USIWM1) | (0 << USIWM0) |
-      (1 << USICS1) | (0 << USICS0) | (1 << USICLK) |
-      (1 << USITC);
-
-  do {
-    _delay_us(T2_TWI);
-    USICR = temp;  // Generate positve SCL edge.
-
-    while (!(PIN_USI & (1 << PIN_USI_SCL))); // Wait for SCL to go high.
-
-    _delay_us(T4_TWI);
-    USICR = temp;  // Generate negative SCL edge.
-  } while (!(USISR & (1 << USIOIF)));  // Check for transfer complete.
-
-  _delay_us(T2_TWI);
-  temp  = USIDR;  // Read out data.
-  USIDR = 0xFF;  // Release SDA.
-  DDR_USI |= (1 << PIN_USI_SDA);  // Enable SDA as output.
-  return temp;  // Return the data from the USIDR
-}
-
-unsigned char USI_TWI_Master_Start(void) {
-  /* Release SCL to ensure that (repeated) Start can be performed */
-  PORT_USI |= (1 << PIN_USI_SCL);
-
-  while (!(PORT_USI & (1 << PIN_USI_SCL)));  // Verify that SCL becomes high.
-
-  _delay_us(T2_TWI);
-
-  /* Generate Start Condition */
-  PORT_USI &= ~(1 << PIN_USI_SDA);  // Force SDA LOW.
-  _delay_us(T4_TWI);
-  PORT_USI &= ~(1 << PIN_USI_SCL);  // Pull SCL LOW.
-  PORT_USI |= (1 << PIN_USI_SDA);  // Release SDA.
-  return TRUE;
-}
-
-unsigned char USI_TWI_Master_Stop(void) {
-  PORT_USI &= ~(1 << PIN_USI_SDA);  // Pull SDA low.
-  PORT_USI |= (1 << PIN_USI_SCL);  // Release SCL.
-
-  while (!(PIN_USI & (1 << PIN_USI_SCL))); // Wait for SCL to go high.
-
-  _delay_us(T4_TWI);
-  PORT_USI |= (1 << PIN_USI_SDA);  // Release SDA.
-  _delay_us(T2_TWI);
-  return TRUE;
+unsigned char USI_TWI_Start_Read_Write(unsigned char *msg,
+                                       unsigned char msgSize) {
+  USI_TWI_state.errorState = 0;       // Clears all mode bits also
+  return (USI_TWI_Start_Transceiver_With_Data(msg, msgSize));
 }
