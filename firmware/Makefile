@@ -17,6 +17,9 @@ M_SECOND=$(shell date +%S)
 
 CC=avr-gcc
 CFLAGS=-g -Os -Wall -mcall-prologues -std=c99 -pedantic -Wundef \
+	-funsigned-char -funsigned-bitfields -fpack-struct \
+	-fshort-enums -ffunction-sections \
+	--combine -fwhole-program -fno-tree-scev-cprop -fno-split-wide-types \
 	-mmcu=$(MCU) \
 	-DF_CPU=$(F_CPU) \
 	-DM_YEAR=0x$(M_YEAR) \
@@ -31,11 +34,11 @@ SOURCES=main.c pcf8523.c USI_TWI_Master.c attinyx5.c bcd.c
 
 program: $(TARGET).hex
 	$(UISP) $(PROGRAMMER_ARGS) \
-	  -U flash:w:$(TARGET).hex
+	-U flash:w:$(TARGET).hex
 
 load-eeprom: eeprom
 	$(UISP) $(PROGRAMMER_ARGS) \
-	  -U eeprom:w:$(TARGET).eep
+	-U eeprom:w:$(TARGET).eep
 
 eeprom: $(TARGET).eep
 
@@ -51,20 +54,12 @@ $(TARGET).out: $(SOURCES)
 prod: CFLAGS += -DPRODUCTION=1
 prod: clean program load-eeprom
 
-uno: MCU=atmega328
-uno: AVRDUDE_TARGET=m328p
-uno: F_CPU=16000000UL
-uno: PROGRAMMER=arduino
-uno: PORT=/dev/tty.usbmodem411
-uno: CFLAGS += -DNO_USI_TWI=1
-uno: clean program eeprom
-
 # http://www.frank-zhao.com/fusecalc/fusecalc.php?chip=attiny25&LOW=62&HIGH=D6
 fuse-t25:
 	sudo $(UISP)  $(PROGRAMMER_ARGS) \
-    -e \
-	  -U lfuse:w:0x62:m \
-		-U hfuse:w:0xD6:m
+	-e \
+	-U lfuse:w:0x62:m \
+	-U hfuse:w:0xD6:m
 
 clean:
 	rm -f *.hex *.eep *.obj *.o *.out
