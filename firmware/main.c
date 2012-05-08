@@ -49,6 +49,7 @@ static void flicker_leds(uint8_t count) {
     wake_on();
     _delay_ms(50);
   }
+
   leds_off();
 }
 
@@ -74,8 +75,10 @@ static void breathe_wake() {
   uint8_t cycles = 2;
   uint8_t phase = 0;
   int8_t phase_direction = 4;
+
   while (cycles) {
     uint8_t sweep = 0;
+
     while (--sweep) {
       if (sweep < phase) {
         wake_on();
@@ -83,12 +86,15 @@ static void breathe_wake() {
         leds_off();
       }
     }
+
     phase += phase_direction;
+
     if (phase == 0) {
       phase_direction = -phase_direction;
       cycles--;
     }
   }
+
   leds_off();
 }
 
@@ -104,10 +110,8 @@ static uint8_t maybe_set_rtc_time() {
                eeprom_read_byte(&kHour),
                eeprom_read_byte(&kMinute),
                eeprom_read_byte(&kSecond) + 15);
-
   // Mark the time set.
   eeprom_update_byte(&kShouldSet, 0);
-
   return 1;
 }
 
@@ -122,17 +126,17 @@ static void read_wake_time() {
 // wakeup time of 6am.
 static void set_wake_time() {
   wake_hours = bcd_add(hours, SET_WAKE_OFFSET_BCD);
+
   if (wake_hours >= HOURS_IN_DAY_BCD) {
     wake_hours = bcd_sub(wake_hours, HOURS_IN_DAY_BCD);
   }
+
   wake_minutes = minutes;
   eeprom_update_byte(&kWakeHour, wake_hours);
   eeprom_update_byte(&kWakeMinute, wake_minutes);
   set_rtc_alarm(wake_hours, wake_minutes);
-
   // TODO: this is all wrong. We need to calculate alarm_hour & alarm_minute
   // as a function of wake_hours/wake_minutes - WAKE_WINDOW_PRE_MINUTES.
-
   flicker_leds(1);
 }
 
@@ -173,20 +177,19 @@ static void power_down() {
   leds_off();
   init_power_reduction_register(1);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-
   // We skip sleeping if the RTC is already trying to wake us up.
   enable_pin_interrupts(1);
+
   if (!clear_rtc_interrupt_flags()) {
     // Go to sleep.
     sleep_mode();
   }
-  enable_pin_interrupts(0);
 
+  enable_pin_interrupts(0);
   // We've woken up. Turn back on any peripherals we need while
   // running.
   init_power_reduction_register(0);
   init_rtc();
-
   // If we woke up and the '8523's SF and AF bits are clear, then it's
   // a safe guess the button press (as opposed to the '8523's /INT1
   // going active).
@@ -256,6 +259,7 @@ static uint8_t do_state_work(uint8_t state) {
   uint8_t in_post_window =
     (minutes_until_wake >= -WAKE_WINDOW_POST_MINUTES &&
      minutes_until_wake <= 0);
+
   if (minutes_until_wake < 0) {
     minutes_until_wake = -minutes_until_wake;
   }
@@ -263,30 +267,36 @@ static uint8_t do_state_work(uint8_t state) {
   if (!in_pre_window && !in_post_window && state != STATE_NIGHT) {
     state = start_NIGHT();
   }
+
   if (in_pre_window && state != STATE_TWILIGHT) {
     state = start_TWILIGHT();
   }
+
   if (in_post_window && state != STATE_DAWN) {
     state = start_DAWN();
   }
+
   switch (state) {
   case STATE_NIGHT:
     handle_NIGHT();
     break;
+
   case STATE_TWILIGHT:
     handle_TWILIGHT(minutes_until_wake);
     break;
+
   case STATE_DAWN:
     handle_DAWN(minutes_until_wake);
     break;
   }
+
   return state;
 }
 
 int main(void) {
   init_system();
-
   uint8_t state = STATE_INIT;
+
   while (1) {
     if (was_button_pressed()) {
       set_wake_time();
@@ -294,7 +304,6 @@ int main(void) {
     }
 
     state = do_state_work(state);
-
     // We're in the right state. Power down, and we'll be woken up by
     // /INT. This function will return when we wake up again.
     power_down();

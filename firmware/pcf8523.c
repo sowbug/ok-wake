@@ -96,11 +96,13 @@ void stop_32768_clkout() {
 
 void set_second_interrupt(uint8_t enable) {
   uint8_t rc1 = read_i2c_byte(RTC_ADDR, RTC_CONTROL_1);
+
   if (enable) {
     rc1 |= SIE;
   } else {
     rc1 &= ~SIE;
   }
+
   write_i2c_byte(RTC_ADDR, RTC_CONTROL_1, rc1);
 }
 

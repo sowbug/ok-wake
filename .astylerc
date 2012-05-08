@@ -6,7 +6,6 @@
 --delete-empty-lines
 --indent-classes
 --indent-col1-comments
---indent-switches
 --indent=spaces=2
 --lineend=linux
 --pad-header

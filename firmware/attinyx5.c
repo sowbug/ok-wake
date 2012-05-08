@@ -19,6 +19,7 @@ int is_button_pressed() {
 void init_power_reduction_register(int for_power_down) {
   // All peripherals off except USI.
   PRR = _BV(PRADC) | _BV(PRTIM0) | _BV(PRTIM1);
+
   if (for_power_down) {
     PRR |= _BV(PRUSI);
   }

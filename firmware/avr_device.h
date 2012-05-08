@@ -20,7 +20,6 @@
 static void init_ports() {
   // LEDs output
   LED_DDR |= QUIET_DD | WAKE_DD;
-
   // BUTTON input with pullup
   BUTTON_DDR &= ~BUTTON_DD;
   BUTTON_PORT |= BUTTON;

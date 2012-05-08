@@ -11,7 +11,7 @@
 *
 * AppNote           : AVR310 - Using the USI module as a TWI Master
 *
-* This is modified to just do I2C communication on ATtiny2313 running at 
+* This is modified to just do I2C communication on ATtiny2313 running at
 * 1MHz. Fast mode is probably possible, but would need a faster clock
 * and has not been tested.
 *

@@ -41,11 +41,11 @@
 
 static void init_power_reduction_register(int for_power_down) {
   PRR = _BV(PRTIM2) |
-    _BV(PRTIM1) |
-    _BV(PRTIM0) |
-    _BV(PRSPI) |
-    _BV(PRUSART0) |
-    _BV(PRADC);  // All peripherals off except TWI.
+        _BV(PRTIM1) |
+        _BV(PRTIM0) |
+        _BV(PRSPI) |
+        _BV(PRUSART0) |
+        _BV(PRADC);  // All peripherals off except TWI.
 
   if (for_power_down) {
     PRR |= _BV(PRTWI);
@@ -66,7 +66,6 @@ ISR(INT0_vect) {
 void i2c_init() {
   // no prescaler
   TWSR = 0;
-
   // set scl frequency
   TWBR = ((F_CPU / SCL_CLOCK) - 16) / 2;
 }
@@ -74,14 +73,17 @@ void i2c_init() {
 void i2c_write(uint8_t byte) {
   TWDR = byte;
   TWCR = (1 << TWINT) | (1 << TWEN);
+
   while (!(TWCR & (1 << TWINT)))
     ;
 }
 
 void i2c_start(uint8_t addr) {
   TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+
   while (!(TWCR & (1 << TWINT)))
     ;
+
   i2c_write(addr);
 }
 
@@ -95,8 +97,10 @@ uint8_t i2c_read(int ack) {
   } else {
     TWCR = (1 << TWINT) | (1 << TWEN);
   }
+
   while (!(TWCR & (1 << TWINT)))
     ;
+
   return TWDR;
 }
 
@@ -109,10 +113,8 @@ void write_i2c_byte(uint8_t addr, uint8_t reg, uint8_t data) {
 
 uint8_t read_i2c_byte(uint8_t addr, uint8_t reg) {
   uint8_t result = 0;
-
   i2c_start(addr);
   i2c_write(reg);
-
   i2c_start(addr + 1);
   result = i2c_read(0);
   i2c_stop();
