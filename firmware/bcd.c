@@ -29,21 +29,43 @@ uint8_t bcd_sub(uint8_t a, uint8_t b) {
   return bcd_sub(a, tencomp(b));
 }
 
-int16_t mul60(int16_t a) {
+// Specialized multipliers that don't bring in the big math library.
+static int16_t mul60(int16_t a) {
   return (a << 6) - (a << 2);
 }
 
-int16_t mul10(int16_t a) {
+static int16_t mul10(int16_t a) {
   return (a << 3) + (a << 1);
+}
+
+static uint8_t div10(uint8_t a) {
+  return ((uint16_t)a * 205) >> 11;
 }
 
 uint8_t bcd_to_decimal(uint8_t bcd) {
   return (bcd & 0x0f) + mul10((bcd >> 4) & 0x0f);
 }
 
+uint8_t decimal_to_bcd(uint8_t decimal) {
+  uint8_t tens = div10(decimal) << 4;
+  printf("%d -> bcd %x\n", decimal, tens + ((decimal - tens) & 0x0f));
+  return tens + ((decimal - tens) & 0x0f);
+}
+
 uint16_t bcd_time_to_minutes(uint16_t a) {
   return bcd_to_decimal(a & 0xff) +
       mul60(bcd_to_decimal((a >> 8) & 0xff));
+}
+
+uint16_t minutes_to_bcd_time(uint16_t minutes) {
+  printf("minutes %d\n", minutes);
+  uint8_t hours = 0;
+  while (minutes >= 60) {
+    minutes -= 60;
+    hours++;
+  }
+  printf("result %x %x\n", decimal_to_bcd(hours), decimal_to_bcd(minutes));
+  return (decimal_to_bcd(hours) << 8) + decimal_to_bcd(minutes);
 }
 
 int16_t subtract_bcd_time_in_minutes(uint16_t a, uint16_t b) {
@@ -61,8 +83,8 @@ int16_t smart_time_until_alarm(uint16_t time_bcd, uint16_t alarm_bcd) {
   return diff_minutes;
 }
 
-uint16_t add_decimal_to_bcd_time(uint16_t wake_time_bcd,
-                                 uint8_t minutes) {
+uint16_t add_minutes_to_bcd_time(uint16_t wake_time_bcd,
+                                 int16_t minutes) {
   int16_t new_time_minutes = bcd_time_to_minutes(wake_time_bcd) + minutes;
   while (new_time_minutes < 0) {
     new_time_minutes += MINUTES_IN_DAY;
@@ -70,5 +92,5 @@ uint16_t add_decimal_to_bcd_time(uint16_t wake_time_bcd,
   while (new_time_minutes >= MINUTES_IN_DAY) {
     new_time_minutes -= MINUTES_IN_DAY;
   }
-  return new_time_minutes;
+  return minutes_to_bcd_time(new_time_minutes);
 }

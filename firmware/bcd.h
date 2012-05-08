@@ -16,15 +16,11 @@ extern const int16_t MINUTES_IN_DAY;
 uint8_t bcd_add(uint8_t a, uint8_t b);
 uint8_t bcd_sub(uint8_t a, uint8_t b);
 
-// Specialized multipliers that don't bring in the big math library.
-int16_t mul60(int16_t a);
-int16_t mul10(int16_t a);
-
 uint8_t bcd_to_decimal(uint8_t bcd);
 uint16_t bcd_time_to_decimal(uint16_t a);
 int16_t subtract_bcd_time_in_minutes(uint16_t a, uint16_t b);
-uint16_t add_decimal_to_bcd_time(uint16_t wake_time_bcd,
-                                 uint8_t minutes);
+uint16_t add_minutes_to_bcd_time(uint16_t wake_time_bcd,
+                                 int16_t minutes);
 
 // Returns the number of minutes between the given time and the given alarm
 // time, interpreting the alarm time as the one closest to the given time.

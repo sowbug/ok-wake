@@ -40,11 +40,11 @@ static void test_bcd() {
     assert(smart_time_until_alarm(b, a) == -2);
   }
 
-  assert(add_decimal_to_bcd_time(0x1130, 1) == 0x1131);
-  assert(add_decimal_to_bcd_time(0x1817, 720) == 0x0617);
-  assert(add_decimal_to_bcd_time(0x1130, -1) == 0x1129);
-  assert(add_decimal_to_bcd_time(0x2359, 1) == 0x0000);
-  assert(add_decimal_to_bcd_time(0x0000, -1) == 0x2359);
+  assert(add_minutes_to_bcd_time(0x1130, 1) == 0x1131);
+  assert(add_minutes_to_bcd_time(0x1817, 720) == 0x0617);
+  assert(add_minutes_to_bcd_time(0x1130, -1) == 0x1129);
+  assert(add_minutes_to_bcd_time(0x2359, 1) == 0x0000);
+  assert(add_minutes_to_bcd_time(0x0000, -1) == 0x2359);
 }
 
 int main() {
