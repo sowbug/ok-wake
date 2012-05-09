@@ -24,6 +24,11 @@ __attribute__((used)) uint8_t EEMEM kShouldSetRTC = 0x01;
 __attribute__((used)) uint8_t EEMEM kRTCTimeCircuits[7] = {
   M_SECONDS, M_MINUTES, M_HOURS, M_DAYS, M_WEEKDAYS, M_MONTHS, M_YEARS };
 
-__attribute__((used)) uint16_t EEMEM kWakeTime = 0x0600;
+// This is in UTC! http://www.whattimeisit.com/ will help if you're confused.
+// 1300 = 6am Pacific Daylight Time (summer).
+// 1400 = 6am Pacific Standard Time (winter).
+// 1000 = 6am Eastern Daylight Time (summer).
+// 1100 = 6am Eastern Standard Time (winter).
+__attribute__((used)) uint16_t EEMEM kWakeTime = 0x1300;
 
 #endif  // guard

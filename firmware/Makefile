@@ -8,13 +8,13 @@ PROGRAMMER=avrisp2
 PORT=usb
 PROGRAMMER_ARGS=-c $(PROGRAMMER) -P $(PORT) -p $(AVRDUDE_TARGET)
 
-M_SECONDS=$(shell date +%S)
-M_MINUTES=$(shell date +%M)
-M_HOURS=$(shell date +%H)
-M_DAYS=$(shell date +%d)
-M_WEEKDAYS=$(shell date +%w)
-M_MONTHS=$(shell date +%m)
-M_YEARS=$(shell date +%y)
+M_SECONDS=$(shell TZ=GMT date +%S)
+M_MINUTES=$(shell TZ=GMT date +%M)
+M_HOURS=$(shell TZ=GMT date +%H)
+M_DAYS=$(shell TZ=GMT date +%d)
+M_WEEKDAYS=$(shell TZ=GMT date +%w)
+M_MONTHS=$(shell TZ=GMT date +%m)
+M_YEARS=$(shell TZ=GMT date +%y)
 
 CC=avr-gcc
 CFLAGS=-g -Os -Wall -mcall-prologues -std=c99 -pedantic -Wundef \
