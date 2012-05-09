@@ -17,12 +17,15 @@ uint8_t EEMEM kNeverUse = 0x55;
 // These values will determine the contents of the .eep file, which
 // can be used to program the EEPROM.
 uint8_t EEMEM kShouldSet = 0x01;
-uint8_t EEMEM kYear = M_YEAR;
-uint8_t EEMEM kMonth = M_MONTH;
-uint8_t EEMEM kDay = M_DAY;
-uint8_t EEMEM kHour = M_HOUR;
-uint8_t EEMEM kMinute = M_MINUTE;
-uint8_t EEMEM kSecond = M_SECOND;
+
+uint8_t EEMEM kSeconds = M_SECONDS;
+uint8_t EEMEM kMinutes = M_MINUTES;
+uint8_t EEMEM kHours = M_HOURS;
+uint8_t EEMEM kDays = M_DAYS;
+uint8_t EEMEM kWeekdays = M_WEEKDAYS;
+uint8_t EEMEM kMonths = M_MONTHS;
+uint8_t EEMEM kYears = M_YEARS;
+
 uint16_t EEMEM kWakeTime = 0x0600;
 
 #endif  // guard

@@ -8,6 +8,7 @@
 #include "avr_device.h"
 #include "bcd.h"
 #include "eeprom.h"
+#include "i2cmaster.h"
 
 #include <avr/io.h>
 #include <avr/sleep.h>
@@ -100,13 +101,10 @@ static uint8_t maybe_set_rtc_time() {
   }
 
   // Update RTC.
-  // TODO: this could be a single read.
-  set_rtc_time(eeprom_read_byte(&kYear),
-               eeprom_read_byte(&kMonth),
-               eeprom_read_byte(&kDay),
-               eeprom_read_byte(&kHour),
-               eeprom_read_byte(&kMinute),
-               eeprom_read_byte(&kSecond) + 15);
+  uint8_t registers[7];
+  eeprom_read_block(&kSeconds, registers, 7);
+  set_rtc_time(registers);
+
   // Mark the time set.
   eeprom_update_byte(&kShouldSet, 0);
   return 1;
@@ -161,7 +159,7 @@ static void power_down() {
   // We've woken up. Turn back on any peripherals we need while
   // running.
   init_power_reduction_register(0);
-  init_rtc();
+  i2c_init();
   // If we woke up and the '8523's SF and AF bits are clear, then it's
   // a safe guess the button press (as opposed to the '8523's /INT1
   // going active).
@@ -210,7 +208,7 @@ static void do_i2c_diagnostics() {
 static void init_system() {
   sei();
   init_ports();
-  init_rtc();
+  i2c_init();
   reset_rtc();
   stop_32768_clkout();
   do_i2c_diagnostics();

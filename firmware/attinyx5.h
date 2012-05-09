@@ -45,8 +45,8 @@ void init_power_reduction_register(int for_power_down);
 
 void enable_pin_interrupts(uint8_t enable);
 
-void write_i2c_byte(uint8_t addr, uint8_t reg, uint8_t data);
-
 uint8_t read_i2c_byte(uint8_t addr, uint8_t reg);
+void write_i2c_byte(uint8_t addr, uint8_t reg, uint8_t data);
+void write_i2c_bytes(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len);
 
 #endif  // #if !defined(__ATTINYX5_H__)

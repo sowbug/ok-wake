@@ -10,15 +10,15 @@
 
 #include <inttypes.h>
 
-void init_rtc();
 void reset_rtc();
 
 uint8_t is_rtc_connected();
 
 uint8_t rtc_write_verify();
 
-void set_rtc_time(uint8_t year, uint8_t month, uint8_t day,
-                  uint8_t hour, uint8_t minute, uint8_t second);
+// registers points to 7 bytes in order S/M/H/D/W/M/Y, corresponding
+// to PCF8523 registers 03-09.
+void set_rtc_time(uint8_t *registers);
 
 uint8_t clear_rtc_interrupt_flags();
 

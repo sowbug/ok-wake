@@ -66,14 +66,8 @@ uint8_t rtc_write_verify() {
   return read_i2c_byte(RTC_ADDR, RTC_TMR_B_REG) == sample;
 }
 
-void set_rtc_time(uint8_t year, uint8_t month, uint8_t day,
-                  uint8_t hour, uint8_t minute, uint8_t second) {
-  write_i2c_byte(RTC_ADDR, RTC_YEARS, year);
-  write_i2c_byte(RTC_ADDR, RTC_MONTHS, month);
-  write_i2c_byte(RTC_ADDR, RTC_DAYS, day);
-  write_i2c_byte(RTC_ADDR, RTC_HOURS, hour);
-  write_i2c_byte(RTC_ADDR, RTC_MINUTES, minute);
-  write_i2c_byte(RTC_ADDR, RTC_SECONDS, second);
+void set_rtc_time(uint8_t *registers) {
+  write_i2c_bytes(RTC_ADDR, RTC_SECONDS, registers, 7);
 }
 
 uint8_t clear_rtc_interrupt_flags() {
