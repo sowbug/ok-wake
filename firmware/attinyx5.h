@@ -12,12 +12,12 @@
 #include <avr/io.h>
 #include "pcf8523.h"
 
-// Function Tiny 328 Arduino
-// Quiet    PB3  PB4 10
-// Wake     PB4  PB2 12
-// Button   PB1  PB0  8
-// SCL      PB2  PC5 A5
-// SDA      PB0  PC4 A4
+// Function t25
+// Quiet    PB3
+// Wake     PB4
+// Button   PB1
+// SCL      PB2
+// SDA      PB0
 
 #define QUIET _BV(PB3)
 #define QUIET_DD _BV(DDB3)
@@ -34,14 +34,14 @@
 #define BUTTON_DDR DDRB
 #define BUTTON_PIN PINB
 
-#define SCL _BV(PB2)
-#define SCL_DD _BV(DDB2)
-#define SDA _BV(PB0)
-#define SDA_DD _BV(DDB0)
+void init_ports();
+void quiet_on();
+void wake_on();
+void leds_off();
 
 int is_button_pressed();
 
-void init_power_reduction_register(int for_power_down);
+void init_power_reduction_register();
 
 void enable_pin_interrupts(uint8_t enable);
 

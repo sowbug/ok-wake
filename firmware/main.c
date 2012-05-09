@@ -5,7 +5,7 @@
  * Copyright (c) 2012 Mike Tsao.
  */
 
-#include "avr_device.h"
+#include "attinyx5.h"
 #include "bcd.h"
 #include "eeprom.h"
 #include "i2cmaster.h"
@@ -28,9 +28,16 @@ const uint8_t TWILIGHT_MINUTES = 30;
 // How long after wake time we should keep blinking lights.
 const uint8_t DAWN_MINUTES = 10;
 
+// The time when it's OK for kid to get up
 uint16_t wake_time_bcd;
+
+// The current time
 uint16_t time_bcd;
+
+// How many seconds before next blink
 uint8_t twilight_counter_top;
+
+// How long until halving counter_top
 uint8_t twilight_next_minute_level;
 
 // Side effect: clears value.
@@ -117,8 +124,7 @@ static void read_wake_time() {
 }
 
 static void set_alarm() {
-  set_rtc_alarm(add_minutes_to_bcd_time(wake_time_bcd,
-                                        -TWILIGHT_MINUTES));
+  set_rtc_alarm(add_minutes_to_bcd_time(wake_time_bcd, -TWILIGHT_MINUTES));
 }
 
 // The idea is you push the button at 6pm, and it'll set the clock for a
@@ -148,35 +154,21 @@ static uint8_t start_DAWN() {
 }
 
 static void power_down() {
-  leds_off();
-  init_power_reduction_register(1);
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-  // We skip sleeping if the RTC is already trying to wake us up.
-  enable_pin_interrupts(1);
+    leds_off();
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    enable_pin_interrupts(1);
 
-  if (!clear_rtc_interrupt_flags()) {
     // Go to sleep.
     sleep_mode();
-  }
 
-  enable_pin_interrupts(0);
-  // We've woken up. Turn back on any peripherals we need while
-  // running.
-  init_power_reduction_register(0);
-  i2c_init();
-  // If we woke up and the '8523's SF and AF bits are clear, then it's
-  // a safe guess the button press (as opposed to the '8523's /INT1
-  // going active).
-  _was_button_pressed = !clear_rtc_interrupt_flags();
+    // We've woken up.
+    enable_pin_interrupts(0);
+    i2c_init();
 
-  // Now wait for the rising edge to pass. This will trigger another
-  // interrupt, but who cares -- the interrupt doesn't do anything
-  // when we're already in full-power mode.
-  while (is_button_pressed())
-    ;
-
-  // We're awake and ready to go. Get the correct time copied locally.
-  refresh_time(&time_bcd);
+    // If we woke up and the '8523's SF and AF bits are clear, then it's
+    // a safe guess the button was pressed (as opposed to the '8523's
+    // /INT1 going active).
+    _was_button_pressed = !clear_rtc_interrupt_flags();
 }
 
 static void handle_NIGHT() {
@@ -230,6 +222,7 @@ static void do_i2c_diagnostics() {
 static void init_system() {
   sei();
   init_ports();
+  init_power_reduction_register();
   i2c_init();
   reset_rtc();
   stop_32768_clkout();
@@ -245,28 +238,25 @@ static void init_system() {
 }
 
 static uint8_t do_state_work(uint8_t state) {
-  int16_t minutes_until_wake = smart_time_until_alarm(time_bcd,
-                                                      wake_time_bcd);
-  uint8_t in_pre_window =
-    (minutes_until_wake <= TWILIGHT_MINUTES &&
-     minutes_until_wake > 0);
-  uint8_t in_post_window =
-    (minutes_until_wake >= -DAWN_MINUTES &&
-     minutes_until_wake <= 0);
+  int16_t minutes_until_wake = smart_time_until_alarm(time_bcd, wake_time_bcd);
+  uint8_t is_twilight = (minutes_until_wake <= TWILIGHT_MINUTES &&
+                         minutes_until_wake > 0);
+  uint8_t is_dawn = (minutes_until_wake > -DAWN_MINUTES &&
+                     minutes_until_wake <= 0);
 
   if (minutes_until_wake < 0) {
     minutes_until_wake = -minutes_until_wake;
   }
 
-  if (!in_pre_window && !in_post_window && state != STATE_NIGHT) {
+  if (!is_twilight && !is_dawn && state != STATE_NIGHT) {
     state = start_NIGHT();
   }
 
-  if (in_pre_window && state != STATE_TWILIGHT) {
+  if (is_twilight && state != STATE_TWILIGHT) {
     state = start_TWILIGHT();
   }
 
-  if (in_post_window && state != STATE_DAWN) {
+  if (is_dawn && state != STATE_DAWN) {
     state = start_DAWN();
   }
 
@@ -298,8 +288,23 @@ int main(void) {
     }
 
     state = do_state_work(state);
-    // We're in the right state. Power down, and we'll be woken up by
-    // /INT. This function will return when we wake up again.
-    power_down();
+
+    // We skip sleeping if the RTC is already trying to wake us up.
+    if (!clear_rtc_interrupt_flags()) {
+      // Wait for the RTC to unassert /INT.
+      while (is_button_pressed())
+        ;
+
+      // Power down, and we'll be woken up by /INT. This function will
+      // return when we wake up again.
+      power_down();
+
+      // Now wait once again for any rising edge to pass.
+      while (is_button_pressed())
+        ;
+
+      // We're awake and ready to go. Get the correct time copied locally.
+      refresh_time(&time_bcd);
+    }
   }
 }

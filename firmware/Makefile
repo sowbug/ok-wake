@@ -68,5 +68,9 @@ fuse-t25:
 	-U lfuse:w:0x62:m \
 	-U hfuse:w:0xD6:m
 
+test: test.c bcd.c
+	gcc -g -o $@.out test.c bcd.c
+	./$@.out
+
 clean:
 	rm -f *.hex *.eep *.obj *.o *.out

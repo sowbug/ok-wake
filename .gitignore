@@ -1,4 +1,5 @@
 *.b#*
+*.dSYM/
 *.dri
 *.eep
 *.ger
@@ -9,5 +10,6 @@
 *.s#*
 *.xln
 *.zip
+*~
 .DS_Store
 eagle.epf

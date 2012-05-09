@@ -20,6 +20,7 @@ uint8_t rtc_write_verify();
 // to PCF8523 registers 03-09.
 void set_rtc_time(uint8_t *registers);
 
+// Returns true if either SF or AF was asserted.
 uint8_t clear_rtc_interrupt_flags();
 
 void set_rtc_alarm(uint16_t time_bcd);

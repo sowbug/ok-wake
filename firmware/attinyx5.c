@@ -12,17 +12,35 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
+void init_ports() {
+  // LEDs output
+  LED_DDR |= QUIET_DD | WAKE_DD;
+  // BUTTON input with pullup
+  BUTTON_DDR &= ~BUTTON_DD;
+  BUTTON_PORT |= BUTTON;
+}
+
+void quiet_on() {
+  LED_PORT |= QUIET;
+  LED_PORT &= ~WAKE;
+}
+
+void wake_on() {
+  LED_PORT |= WAKE;
+  LED_PORT &= ~QUIET;
+}
+
+void leds_off() {
+  LED_PORT &= ~(WAKE | QUIET);
+}
+
 int is_button_pressed() {
   return !(PINB & BUTTON);
 }
 
-void init_power_reduction_register(int for_power_down) {
-  // All peripherals off except USI.
-  PRR = _BV(PRADC) | _BV(PRTIM0) | _BV(PRTIM1);
-
-  if (for_power_down) {
-    PRR |= _BV(PRUSI);
-  }
+void init_power_reduction_register() {
+  // All peripherals off.
+  PRR = _BV(PRADC) | _BV(PRTIM0) | _BV(PRTIM1) | _BV(PRUSI);
 }
 
 void enable_pin_interrupts(uint8_t enable) {
