@@ -5,7 +5,7 @@
  * Copyright (c) 2012 Mike Tsao.
  */
 
-// Build/run: gcc test.c && ./a.out
+// Build/run: gcc test.c bcd.c && ./a.out
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +14,6 @@
 #include "bcd.h"
 
 static void test_bcd() {
-  // Calculate the number of minutes between two BCD times.
   {
     const uint16_t a = 0x830;
     const uint16_t b = 0x930;

@@ -23,7 +23,6 @@ uint8_t EEMEM kDay = M_DAY;
 uint8_t EEMEM kHour = M_HOUR;
 uint8_t EEMEM kMinute = M_MINUTE;
 uint8_t EEMEM kSecond = M_SECOND;
-uint8_t EEMEM kWakeHour = 0x06;
-uint8_t EEMEM kWakeMinute = 0x00;
+uint16_t EEMEM kWakeTime = 0x0600;
 
 #endif  // guard
