@@ -30,7 +30,13 @@ CFLAGS=-g -Os -Wall -mcall-prologues -std=c99 -pedantic -Wundef \
   -DM_SECOND=0x$(M_SECOND)
 OBJ2HEX=avr-objcopy
 
-SOURCES=main.c pcf8523.c USI_TWI_Master.c attinyx5.c bcd.c
+SOURCES= \
+	attinyx5.c \
+	bcd.c \
+	i2cmaster.S \
+	main.c \
+	pcf8523.c 
+# 	USI_TWI_Master.c 
 
 program: $(TARGET).hex
 	$(UISP) $(PROGRAMMER_ARGS) \

@@ -5,14 +5,12 @@
  * Copyright (c) 2012 Mike Tsao.
  */
 
+#include "attinyx5.h"
+#include "i2cmaster.h"
 #include "pcf8523.h"
-#include "i2c.h"
 
 #include <avr/io.h>
 #include <util/delay.h>
-
-// forward declaration. TODO: fix!
-void i2c_init();
 
 const uint8_t AF = _BV(3);
 const uint8_t AIE = _BV(1);
