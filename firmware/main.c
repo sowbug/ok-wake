@@ -102,7 +102,7 @@ static uint8_t maybe_set_rtc_time() {
 
   // Update RTC.
   uint8_t registers[7];
-  eeprom_read_block(&kRTCTimeCircuits, registers, 7);
+  eeprom_read_block(registers, &kRTCTimeCircuits, 7);
   set_rtc_time(registers);
 
   // Mark the time set.
@@ -217,6 +217,7 @@ static void init_system() {
     flicker_leds(8);
   }
 
+  refresh_time(&time_bcd);
   read_wake_time();
   set_alarm();
 }

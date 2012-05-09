@@ -61,7 +61,7 @@ uint8_t is_rtc_connected() {
 }
 
 uint8_t rtc_write_verify() {
-  uint8_t sample = read_i2c_byte(RTC_ADDR, RTC_TMR_B_REG) + 7;
+  uint8_t sample = read_i2c_byte(RTC_ADDR, RTC_TMR_B_REG) + 0xaa;
   write_i2c_byte(RTC_ADDR, RTC_TMR_B_REG, sample);
   return read_i2c_byte(RTC_ADDR, RTC_TMR_B_REG) == sample;
 }

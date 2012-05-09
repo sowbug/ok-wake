@@ -41,6 +41,7 @@ static void test_bcd() {
 
   assert(add_minutes_to_bcd_time(0x1130, 1) == 0x1131);
   assert(add_minutes_to_bcd_time(0x1817, 720) == 0x0617);
+  assert(add_minutes_to_bcd_time(0x1916, 60 * 12) == 0x0716);
   assert(add_minutes_to_bcd_time(0x1130, -1) == 0x1129);
   assert(add_minutes_to_bcd_time(0x2359, 1) == 0x0000);
   assert(add_minutes_to_bcd_time(0x0000, -1) == 0x2359);
@@ -48,5 +49,6 @@ static void test_bcd() {
 
 int main() {
   test_bcd();
+  printf("OK.\n");
   return 0;
 }
