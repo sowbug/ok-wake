@@ -57,7 +57,7 @@ int16_t subtract_bcd_time_in_minutes(uint16_t a, uint16_t b) {
 }
 
 int16_t smart_time_until_alarm(uint16_t time_bcd, uint16_t alarm_bcd) {
-  int16_t diff_minutes = subtract_bcd_time_in_minutes(time_bcd, alarm_bcd);
+  int16_t diff_minutes = subtract_bcd_time_in_minutes(alarm_bcd, time_bcd);
   if (diff_minutes >= MINUTES_IN_HALF_DAY) {
     return diff_minutes - MINUTES_IN_DAY;
   }

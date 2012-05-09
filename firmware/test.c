@@ -26,8 +26,14 @@ static void test_bcd() {
     const uint16_t b = 0x0;
     assert(subtract_bcd_time_in_minutes(a, b) == 1410);
     assert(subtract_bcd_time_in_minutes(b, a) == -1410);
-    assert(smart_time_until_alarm(a, b) == -30);
-    assert(smart_time_until_alarm(b, a) == 30);
+    assert(smart_time_until_alarm(a, b) == 30);
+    assert(smart_time_until_alarm(b, a) == -30);
+  }
+  {
+    const uint16_t a = 0x1932;
+    const uint16_t b = 0x1940;
+    assert(smart_time_until_alarm(a, b) == 8);
+    assert(smart_time_until_alarm(b, a) == -8);
   }
   {
     const uint16_t a = 0x0001;
@@ -35,8 +41,8 @@ static void test_bcd() {
 
     assert(subtract_bcd_time_in_minutes(a, b) == -1438);
     assert(subtract_bcd_time_in_minutes(b, a) == 1438);
-    assert(smart_time_until_alarm(a, b) == 2);
-    assert(smart_time_until_alarm(b, a) == -2);
+    assert(smart_time_until_alarm(a, b) == -2);
+    assert(smart_time_until_alarm(b, a) == 2);
   }
 
   assert(add_minutes_to_bcd_time(0x1130, 1) == 0x1131);
