@@ -23,13 +23,15 @@ enum {
 };
 
 // How long before wake time we should start blinking lights.
-const uint8_t WAKE_WINDOW_PRE_MINUTES = 30;
+const uint8_t TWILIGHT_MINUTES = 30;
 
 // How long after wake time we should keep blinking lights.
-const uint8_t WAKE_WINDOW_POST_MINUTES = 10;
+const uint8_t DAWN_MINUTES = 10;
 
 uint16_t wake_time_bcd;
 uint16_t time_bcd;
+uint8_t twilight_counter_top;
+uint8_t twilight_next_minute_level;
 
 // Side effect: clears value.
 static uint8_t _was_button_pressed;
@@ -42,9 +44,9 @@ uint8_t was_button_pressed() {
 static void flicker_leds(uint8_t count) {
   while (count--) {
     quiet_on();
-    _delay_ms(50);
+    _delay_ms(25);
     wake_on();
-    _delay_ms(50);
+    _delay_ms(25);
   }
 
   leds_off();
@@ -53,18 +55,18 @@ static void flicker_leds(uint8_t count) {
 static void flicker_quiet(uint8_t count) {
   while (count--) {
     quiet_on();
-    _delay_ms(25);
+    _delay_ms(5);
     leds_off();
-    _delay_ms(25);
+    _delay_ms(45);
   }
 }
 
 static void flicker_wake(uint8_t count) {
   while (count--) {
     wake_on();
-    _delay_ms(25);
+    _delay_ms(5);
     leds_off();
-    _delay_ms(25);
+    _delay_ms(45);
   }
 }
 
@@ -116,7 +118,7 @@ static void read_wake_time() {
 
 static void set_alarm() {
   set_rtc_alarm(add_minutes_to_bcd_time(wake_time_bcd,
-                                        -WAKE_WINDOW_PRE_MINUTES));
+                                        -TWILIGHT_MINUTES));
 }
 
 // The idea is you push the button at 6pm, and it'll set the clock for a
@@ -135,6 +137,8 @@ static uint8_t start_NIGHT() {
 
 static uint8_t start_TWILIGHT() {
   set_second_interrupt(1);
+  twilight_counter_top = 10;
+  twilight_next_minute_level = TWILIGHT_MINUTES >> 1;
   return STATE_TWILIGHT;
 }
 
@@ -178,12 +182,30 @@ static void power_down() {
 static void handle_NIGHT() {
 }
 
-static void handle_TWILIGHT(int16_t minutes_left) {
-  if (minutes_left <= 5) {
+static void do_twilight_blink(int16_t minutes_left) {
+  if (minutes_left <= 1) {
+    flicker_quiet(1);
+    flicker_wake(1);
+  } else if (minutes_left <= 2) {
     flicker_quiet(2);
     flicker_wake(1);
   } else {
     flicker_quiet(1);
+  }
+}
+
+static void handle_TWILIGHT(int16_t minutes_left) {
+  static uint8_t counter;
+
+  while (minutes_left < twilight_next_minute_level &&
+         twilight_counter_top > 1) {
+    twilight_next_minute_level >>= 1;
+    twilight_counter_top >>= 1;
+  }
+
+  if (!counter--) {
+    do_twilight_blink(minutes_left);
+    counter = twilight_counter_top;
   }
 }
 
@@ -226,10 +248,10 @@ static uint8_t do_state_work(uint8_t state) {
   int16_t minutes_until_wake = smart_time_until_alarm(time_bcd,
                                                       wake_time_bcd);
   uint8_t in_pre_window =
-    (minutes_until_wake <= WAKE_WINDOW_PRE_MINUTES &&
+    (minutes_until_wake <= TWILIGHT_MINUTES &&
      minutes_until_wake > 0);
   uint8_t in_post_window =
-    (minutes_until_wake >= -WAKE_WINDOW_POST_MINUTES &&
+    (minutes_until_wake >= -DAWN_MINUTES &&
      minutes_until_wake <= 0);
 
   if (minutes_until_wake < 0) {
