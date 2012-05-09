@@ -96,17 +96,17 @@ static void breathe_wake() {
 }
 
 static uint8_t maybe_set_rtc_time() {
-  if (!eeprom_read_byte(&kShouldSet)) {
+  if (!eeprom_read_byte(&kShouldSetRTC)) {
     return 0;
   }
 
   // Update RTC.
   uint8_t registers[7];
-  eeprom_read_block(&kSeconds, registers, 7);
+  eeprom_read_block(&kRTCTimeCircuits, registers, 7);
   set_rtc_time(registers);
 
   // Mark the time set.
-  eeprom_update_byte(&kShouldSet, 0);
+  eeprom_update_byte(&kShouldSetRTC, 0);
   return 1;
 }
 
