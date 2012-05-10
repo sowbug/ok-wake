@@ -291,7 +291,7 @@ int main(void) {
 
     // We skip sleeping if the RTC is already trying to wake us up.
     if (!clear_rtc_interrupt_flags()) {
-      // Wait for the RTC to unassert /INT.
+      // Wait for user to release button.
       while (is_button_pressed())
         ;
 
