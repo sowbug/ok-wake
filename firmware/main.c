@@ -26,7 +26,7 @@ enum {
 const uint8_t TWILIGHT_MINUTES = 30;
 
 // How long after wake time we should keep blinking lights.
-const uint8_t DAWN_MINUTES = 10;
+const uint8_t DAWN_MINUTES = 30;
 
 // The time when it's OK for kid to get up
 uint16_t wake_time_bcd;
@@ -202,7 +202,11 @@ static void handle_TWILIGHT(int16_t minutes_left) {
 }
 
 static void handle_DAWN(int16_t minutes_elapsed) {
-  breathe_wake();
+  if (minutes_elapsed < 3) {
+    breathe_wake();
+  } else {
+    flicker_wake(1);
+  }
 }
 
 static void do_i2c_diagnostics() {
